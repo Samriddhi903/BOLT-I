@@ -16,6 +16,7 @@ import TinderPage from "./components/TinderPage";
 import RoleSelectionPage from "./components/RoleSelectionPage";
 import StartupDetailsPage from "./components/StartupDetailsPage";
 import InvestorDetailsPage from "./components/InvestorDetailsPage";
+import ProfileEditPage from "./components/ProfileEditPage";
 import PageTransition from "./components/PageTransition";
 import LoginSignupPage from "./components/LoginSignupPage";
 import VoiceStartupAdvisor from "./components/VoiceStartupAdvisor";
@@ -79,6 +80,14 @@ const AppContent = () => {
             element={
               <PageTransition>
                 <InvestorDetailsPage />
+              </PageTransition>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <PageTransition>
+                <ProfileEditPage />
               </PageTransition>
             }
           />

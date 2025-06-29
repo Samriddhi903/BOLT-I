@@ -534,6 +534,7 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
       user: {
         id: user._id,
         email: user.email,
+        role: user.role,
         createdAt: user.createdAt,
         lastLogin: user.lastLogin,
         businessId: startupProfile ? req.user.userId : null // Use userId as businessId if they have a startup profile
@@ -543,6 +544,54 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Get user error:', error);
     res.status(500).json({ error: 'Failed to get user data' });
+  }
+});
+
+// POST /api/auth/change-password
+app.post('/api/auth/change-password', authenticateToken, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Current password and new password are required' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'New password must be at least 6 characters long' });
+    }
+
+    const database = await connectToDatabase();
+    
+    // Get user
+    const user = await database.collection('users').findOne({ _id: new ObjectId(req.user.userId) });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Verify current password
+    const isValidPassword = await bcrypt.compare(currentPassword, user.password);
+    if (!isValidPassword) {
+      return res.status(400).json({ error: 'Current password is incorrect' });
+    }
+
+    // Hash new password
+    const saltRounds = 12;
+    const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
+
+    // Update password
+    await database.collection('users').updateOne(
+      { _id: new ObjectId(req.user.userId) },
+      { $set: { password: hashedNewPassword, passwordUpdatedAt: new Date().toISOString() } }
+    );
+
+    res.json({
+      success: true,
+      message: 'Password changed successfully'
+    });
+
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({ error: 'Failed to change password' });
   }
 });
 
@@ -584,6 +633,54 @@ app.post('/api/user/role', authenticateToken, async (req, res) => {
   }
 });
 
+// GET /api/user/startup-details - Get startup profile
+app.get('/api/user/startup-details', authenticateToken, async (req, res) => {
+  try {
+    const database = await connectToDatabase();
+    
+    const startupProfile = await database.collection('startup_profiles').findOne(
+      { userId: req.user.userId }
+    );
+
+    if (!startupProfile) {
+      return res.json({ success: true, profile: null });
+    }
+
+    res.json({
+      success: true,
+      profile: startupProfile
+    });
+
+  } catch (error) {
+    console.error('Get startup details error:', error);
+    res.status(500).json({ error: 'Failed to get startup details' });
+  }
+});
+
+// GET /api/user/investor-details - Get investor profile
+app.get('/api/user/investor-details', authenticateToken, async (req, res) => {
+  try {
+    const database = await connectToDatabase();
+    
+    const investorProfile = await database.collection('investor_profiles').findOne(
+      { userId: req.user.userId }
+    );
+
+    if (!investorProfile) {
+      return res.json({ success: true, profile: null });
+    }
+
+    res.json({
+      success: true,
+      profile: investorProfile
+    });
+
+  } catch (error) {
+    console.error('Get investor details error:', error);
+    res.status(500).json({ error: 'Failed to get investor details' });
+  }
+});
+
 // POST /api/user/startup-details - Store startup details
 app.post('/api/user/startup-details', authenticateToken, async (req, res) => {
   try {
@@ -597,6 +694,8 @@ app.post('/api/user/startup-details', authenticateToken, async (req, res) => {
       fundingNeeded,
       website,
       location,
+      logo,
+      tags,
       monthlyData
     } = req.body;
 
@@ -618,6 +717,8 @@ app.post('/api/user/startup-details', authenticateToken, async (req, res) => {
       fundingNeeded: fundingNeeded || null,
       website: website || null,
       location: location || null,
+      logo: logo || null,
+      tags: tags || [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -801,7 +902,9 @@ app.post('/api/user/investor-details', authenticateToken, async (req, res) => {
       description,
       website,
       location,
-      linkedin
+      linkedin,
+      avatar,
+      tags
     } = req.body;
 
     if (!fullName || !investmentFocus || !description) {
@@ -827,6 +930,8 @@ app.post('/api/user/investor-details', authenticateToken, async (req, res) => {
       website: website || null,
       location: location || null,
       linkedin: linkedin || null,
+      avatar: avatar || null,
+      tags: tags || [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -1050,4 +1155,4 @@ app.get('/api/match/list', authenticateToken, async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-}); 
+});

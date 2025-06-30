@@ -54,9 +54,21 @@ interface VoiceStartupAdvisorProps {
 const StyledVoiceAdvisor = styled.div`
   .avatar-container {
     position: relative;
-    width: 240px;
-    height: 240px;
-    margin: 0 auto;
+    width: 400px;
+    height: 400px;
+    margin: 0 auto 2rem auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  @media (max-width: 600px) {
+    .avatar-container {
+      width: 90vw;
+      height: 90vw;
+      max-width: 98vw;
+      max-height: 98vw;
+    }
   }
 
   .avatar {
@@ -434,6 +446,7 @@ const VoiceStartupAdvisor: React.FC<VoiceStartupAdvisorProps> = ({
   const [speechRecognitionError, setSpeechRecognitionError] = useState<
     string | null
   >(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatInputRef = useRef<HTMLTextAreaElement>(null);
@@ -784,383 +797,246 @@ const VoiceStartupAdvisor: React.FC<VoiceStartupAdvisorProps> = ({
     "What metrics should I focus on for growth?",
   ];
 
+  // Helper to get the latest AI message
+  const latestBotMessage = messages.filter(m => m.type === 'bot').slice(-1)[0]?.content || '';
+
   return (
-    <StyledVoiceAdvisor className="pt-20 min-h-screen bg-[#121212] relative">
-      {/* Enhanced background effects */}
-      <div
-        className="absolute inset-0 opacity-30"
-        style={{
-          background:
-            "radial-gradient(circle at 20% 80%, rgba(139, 92, 246, 0.15) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(168, 85, 247, 0.1) 0%, transparent 50%)",
-          filter: "blur(100px)",
-        }}
-      />
+    <StyledVoiceAdvisor className="pt-20 min-h-screen bg-gradient-to-br from-[#18122B] via-[#1E1B3A] to-[#120C1C] relative font-poppins text-white">
+      {/* Animated, glassy background overlay */}
+      <StyledVoiceAdvisor className="pt-20 min-h-screen bg-[#121212] relative">
+        {/* Enhanced background effects */}
+        <div
+          className="absolute inset-0 opacity-30"
+          style={{
+            background:
+              "radial-gradient(circle at 20% 80%, rgba(139, 92, 246, 0.15) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(168, 85, 247, 0.1) 0%, transparent 50%)",
+            filter: "blur(100px)",
+          }}
+        />
 
-      {/* Floating particles */}
-      <div className="floating-particles">
-        <div className="particle"></div>
-        <div className="particle"></div>
-        <div className="particle"></div>
-        <div className="particle"></div>
-        <div className="particle"></div>
-      </div>
+        {/* Floating particles */}
+        <div className="floating-particles">
+          <div className="particle"></div>
+          <div className="particle"></div>
+          <div className="particle"></div>
+          <div className="particle"></div>
+          <div className="particle"></div>
+        </div>
 
-      {/* Hidden audio element for Eleven Labs playback */}
-      <audio ref={audioRef} style={{ display: "none" }} />
+        {/* Hidden audio element for Eleven Labs playback */}
+        <audio ref={audioRef} style={{ display: "none" }} />
 
-      <div className="relative z-10 max-w-6xl mx-auto px-4 py-8">
-        {/* Enhanced Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
-          className="text-center mb-12"
-        >
-          <div className="flex items-center justify-center space-x-4 mb-6">
-            <motion.div
-              initial={{ scale: 0, rotate: -180 }}
-              animate={{ scale: 1, rotate: 0 }}
-              transition={{ delay: 0.2, duration: 0.6 }}
-            >
-              <Brain className="w-10 h-10 text-purple-400" />
-            </motion.div>
-            <h1 className="text-5xl font-bold gradient-text">
-              AI Startup Advisor
-            </h1>
-            <motion.div
-              initial={{ scale: 0, rotate: 180 }}
-              animate={{ scale: 1, rotate: 0 }}
-              transition={{ delay: 0.4, duration: 0.6 }}
-            >
-              <Sparkles className="w-10 h-10 text-purple-400" />
-            </motion.div>
-          </div>
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6, duration: 0.6 }}
-            className="text-gray-400 text-xl mb-6 font-light"
-          >
-            Your intelligent business companion with voice capabilities
-          </motion.p>
+        <div className="relative z-20 max-w-6xl mx-auto px-4 py-8">
+          {/* Enhanced Header */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: -30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.8, duration: 0.6 }}
-            className="flex items-center justify-center space-x-6"
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            className="text-center mb-12"
           >
-            <div className="status-badge rounded-full px-6 py-3">
-              <div className="flex items-center space-x-3">
-                <Zap className="w-5 h-5 text-purple-400" />
-                <span className="text-gray-300 text-sm font-medium">
-                  Powered by Gemini & Eleven Labs
-                </span>
-              </div>
+            <div className="flex items-center justify-center space-x-4 mb-6">
+              
+              <h1 className="text-5xl font-bold text-white">
+                AI Startup Advisor
+              </h1>
+            
             </div>
-            {businessData && (
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6, duration: 0.6 }}
+              className="text-gray-400 text-xl mb-6 font-light"
+            >
+              Your intelligent business companion with voice capabilities
+            </motion.p>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.8, duration: 0.6 }}
+              className="flex items-center justify-center space-x-6"
+            >
               <div className="status-badge rounded-full px-6 py-3">
                 <div className="flex items-center space-x-3">
-                  <Database className="w-5 h-5 text-green-400" />
+                  <Zap className="w-5 h-5 text-purple-400" />
                   <span className="text-gray-300 text-sm font-medium">
-                    Connected to {businessData.companyName}
+                    Powered by Gemini & Eleven Labs
                   </span>
                 </div>
               </div>
-            )}
+            </motion.div>
           </motion.div>
-        </motion.div>
 
-        {/* Enhanced Centered Avatar */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.5 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.3, duration: 1, ease: "easeOut" }}
-          className="flex justify-center mb-12"
-        >
-          <div className="avatar-container">
-            <Orb hue={270} />
-          </div>
-        </motion.div>
-
-        {/* Enhanced Status Indicators */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5, duration: 0.6 }}
-          className="flex justify-center space-x-8 mb-10"
-        >
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={() => setAudioOutputEnabled(!audioOutputEnabled)}
-              className={`p-4 rounded-full transition-all status-badge ${
-                audioOutputEnabled
-                  ? "bg-green-500/20 text-green-400 border-green-500/40"
-                  : "bg-gray-600/20 text-gray-400 border-gray-500/40"
-              }`}
-              title={
-                audioOutputEnabled
-                  ? "Voice output enabled"
-                  : "Voice output disabled"
-              }
-            >
-              {audioOutputEnabled ? (
-                <Volume2 className="w-6 h-6" />
-              ) : (
-                <VolumeX className="w-6 h-6" />
-              )}
-            </button>
-            <span className="text-gray-400 text-sm font-medium">
-              {audioOutputEnabled ? "Voice Output On" : "Voice Output Off"}
-            </span>
-          </div>
-
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={() => {
-                if (isListening) {
-                  recognitionRef.current?.stop();
-                } else {
-                  recognitionRef.current?.start();
-                }
-              }}
-              disabled={!recognitionRef.current || !speechRecognitionSupported}
-              className={`p-4 rounded-full transition-all voice-button glow-effect ${
-                isListening ? "listening" : ""
-              } ${
-                !speechRecognitionSupported
-                  ? "opacity-50 cursor-not-allowed"
-                  : ""
-              }`}
-              title={
-                !speechRecognitionSupported
-                  ? "Voice input not available"
-                  : "Click to speak"
-              }
-            >
-              {isListening ? (
-                <MicOff className="w-6 h-6 text-white" />
-              ) : (
-                <Mic className="w-6 h-6 text-white" />
-              )}
-            </button>
-            <span className="text-gray-400 text-sm font-medium">
-              {!speechRecognitionSupported
-                ? "Voice Input Unavailable"
-                : isListening
-                ? "Listening..."
-                : "Voice Input"}
-            </span>
-          </div>
-        </motion.div>
-
-        {/* Enhanced Error Messages */}
-        <AnimatePresence>
-          {speechRecognitionError && (
-            <motion.div
-              initial={{ opacity: 0, y: -20, scale: 0.9 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -20, scale: 0.9 }}
-              className="text-center mb-8"
-            >
-              <div className="bg-red-500/20 border border-red-500/40 rounded-2xl px-6 py-4 inline-block backdrop-blur-sm">
-                <span className="text-red-400 text-sm font-medium">
-                  {speechRecognitionError}
+          {/* Enhanced Centered Avatar */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.3, duration: 1, ease: "easeOut" }}
+            className="flex flex-col items-center mb-8"
+          >
+            <div className="avatar-container relative shadow-2xl rounded-full border-4 border-transparent bg-black/30 backdrop-blur-2xl">
+              <div className="absolute -inset-2 rounded-full bg-gradient-to-br from-blue-500 via-purple-500 to-fuchsia-600 blur-2xl opacity-70 animate-pulse" />
+              <div className="relative w-full h-full z-10">
+                <Orb hue={300} />
+                <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <span className="text-[0.7rem] font-poppins font-semibold tracking-wide text-white opacity-90 text-center select-none">
+                    Ask me anything about<br />your business.
+                  </span>
                 </span>
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+            </div>
+            {/* Current AI response below Orb */}
+            {(isLoading || latestBotMessage) && (
+              <div className="text-base font-normal text-gray-300 text-center mt-6 opacity-80">
+                {isLoading ? (
+                  <span className="animate-pulse">{latestBotMessage || 'Thinking...'}</span>
+                ) : (
+                  latestBotMessage
+                )}
+              </div>
+            )}
+          </motion.div>
 
-        {/* Enhanced Messages Area */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7, duration: 0.6 }}
-          className="max-w-4xl mx-auto mb-10"
-        >
-          <div className="space-y-6 max-h-96 overflow-y-auto custom-scrollbar p-4">
-            {messages.map((message, index) => (
-              <motion.div
-                key={message.id}
-                initial={{
-                  opacity: 0,
-                  x: message.type === "user" ? 30 : -30,
-                  scale: 0.9,
-                }}
-                animate={{ opacity: 1, x: 0, scale: 1 }}
-                transition={{ delay: index * 0.1, duration: 0.5 }}
-                className={`flex ${
-                  message.type === "user" ? "justify-end" : "justify-start"
+          {/* Enhanced Status Indicators */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5, duration: 0.6 }}
+            className="flex justify-center space-x-8 mb-10"
+          >
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => setAudioOutputEnabled(!audioOutputEnabled)}
+                className={`p-4 rounded-full transition-all status-badge ${
+                  audioOutputEnabled
+                    ? "bg-green-500/20 text-green-400 border-green-500/40"
+                    : "bg-gray-600/20 text-gray-400 border-gray-500/40"
                 }`}
+                title={
+                  audioOutputEnabled
+                    ? "Voice output enabled"
+                    : "Voice output disabled"
+                }
               >
-                <div
-                  className={`flex items-start space-x-4 max-w-[85%] ${
-                    message.type === "user"
-                      ? "flex-row-reverse space-x-reverse"
-                      : ""
-                  }`}
-                >
-                  <div
-                    className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                      message.type === "user"
-                        ? "bg-purple-600"
-                        : "bg-gradient-to-r from-purple-600 to-purple-700"
-                    }`}
-                  >
-                    {message.type === "user" ? (
-                      <User className="w-6 h-6 text-white" />
-                    ) : (
-                      <Bot className="w-6 h-6 text-white" />
-                    )}
-                  </div>
-                  <div
-                    className={`message-bubble rounded-2xl px-6 py-4 ${
-                      message.type === "user" ? "user-message" : "bot-message"
-                    }`}
-                  >
-                    <p className="text-gray-200 leading-relaxed whitespace-pre-wrap text-base">
-                      {message.content}
-                    </p>
-                    <p
-                      className={`text-xs mt-3 ${
-                        message.type === "user"
-                          ? "text-purple-300"
-                          : "text-gray-400"
-                      }`}
-                    >
-                      {message.timestamp.toLocaleTimeString()}
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
+                {audioOutputEnabled ? (
+                  <Volume2 className="w-6 h-6" />
+                ) : (
+                  <VolumeX className="w-6 h-6" />
+                )}
+              </button>
+              <span className="text-gray-400 text-sm font-medium">
+                {audioOutputEnabled ? "Voice Output On" : "Voice Output Off"}
+              </span>
+            </div>
 
-            {isLoading && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="flex justify-start"
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => {
+                  if (isListening) {
+                    recognitionRef.current?.stop();
+                  } else {
+                    recognitionRef.current?.start();
+                  }
+                }}
+                disabled={!recognitionRef.current || !speechRecognitionSupported}
+                className={`p-4 rounded-full transition-all voice-button glow-effect ${
+                  isListening ? "listening" : ""
+                } ${
+                  !speechRecognitionSupported
+                    ? "opacity-50 cursor-not-allowed"
+                    : ""
+                }`}
+                title={
+                  !speechRecognitionSupported
+                    ? "Voice input not available"
+                    : "Click to speak"
+                }
               >
-                <div className="flex items-start space-x-4">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-r from-purple-600 to-purple-700 flex items-center justify-center">
-                    <Bot className="w-6 h-6 text-white" />
-                  </div>
-                  <div className="message-bubble bot-message rounded-2xl px-6 py-4">
-                    <div className="flex items-center space-x-4">
-                      <Loader2 className="w-6 h-6 animate-spin text-purple-400" />
-                      <span className="text-gray-300 font-medium">
-                        Analyzing your business data...
-                      </span>
-                    </div>
-                  </div>
+                {isListening ? (
+                  <MicOff className="w-6 h-6 text-white" />
+                ) : (
+                  <Mic className="w-6 h-6 text-white" />
+                )}
+              </button>
+              <span className="text-gray-400 text-sm font-medium">
+                {!speechRecognitionSupported
+                  ? "Voice Input Unavailable"
+                  : isListening
+                  ? "Listening..."
+                  : "Voice Input"}
+              </span>
+            </div>
+          </motion.div>
+
+          {/* Enhanced Error Messages */}
+          <AnimatePresence>
+            {speechRecognitionError && (
+              <motion.div
+                initial={{ opacity: 0, y: -20, scale: 0.9 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -20, scale: 0.9 }}
+                className="text-center mb-8"
+              >
+                <div className="bg-red-500/20 border border-red-500/40 rounded-2xl px-6 py-4 inline-block backdrop-blur-sm">
+                  <span className="text-red-400 text-sm font-medium">
+                    {speechRecognitionError}
+                  </span>
                 </div>
               </motion.div>
             )}
+          </AnimatePresence>
 
-            {(isSpeaking || isLoadingAudio) && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="flex justify-start"
-              >
-                <div className="flex items-start space-x-4">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-r from-purple-600 to-purple-700 flex items-center justify-center">
-                    <Volume2 className="w-6 h-6 text-white animate-pulse" />
-                  </div>
-                  <div className="message-bubble bot-message rounded-2xl px-6 py-4">
-                    <div className="flex items-center space-x-4">
-                      {isLoadingAudio ? (
-                        <>
-                          <Loader2 className="w-6 h-6 animate-spin text-purple-400" />
-                          <span className="text-gray-300 font-medium">
-                            Generating speech...
-                          </span>
-                        </>
-                      ) : (
-                        <>
-                          <div className="flex space-x-2">
-                            <div className="w-3 h-3 bg-purple-400 rounded-full animate-bounce"></div>
-                            <div
-                              className="w-3 h-3 bg-purple-400 rounded-full animate-bounce"
-                              style={{ animationDelay: "0.1s" }}
-                            ></div>
-                            <div
-                              className="w-3 h-3 bg-purple-400 rounded-full animate-bounce"
-                              style={{ animationDelay: "0.2s" }}
-                            ></div>
-                          </div>
-                          <span className="text-gray-300 font-medium">
-                            Speaking...
-                          </span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            <div ref={messagesEndRef} />
+          {/* 7. Collapsible dialog box for full conversation history */}
+          <div className="flex justify-center mb-8">
+            <button onClick={() => setDialogOpen(v => !v)} className="px-6 py-2 rounded-xl bg-black/40 border border-white/30 text-white font-semibold shadow hover:bg-white/10 transition-all">
+              {dialogOpen ? 'Hide Conversation' : 'Show Conversation'}
+            </button>
           </div>
-        </motion.div>
-
-        {/* Enhanced Quick Prompts */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.9, duration: 0.6 }}
-          className="max-w-5xl mx-auto mb-10"
-        >
-          <div className="flex flex-wrap justify-center gap-4">
-            {quickPrompts.map((prompt, index) => (
-              <motion.button
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 1 + index * 0.1, duration: 0.5 }}
-                onClick={() => setInputMessage(prompt)}
-                className="quick-prompt px-6 py-3 rounded-2xl text-sm transition-all text-gray-300 hover:text-white font-medium"
-                disabled={isLoading}
-              >
-                {prompt}
-              </motion.button>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* Enhanced Input Area */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.1, duration: 0.6 }}
-          className="max-w-4xl mx-auto"
-        >
-          <div className="input-container rounded-2xl p-8">
-            <div className="flex space-x-6">
-              <textarea
-                ref={chatInputRef}
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Ask me about your business or speak to me..."
-                className="flex-1 bg-black/40 text-gray-200 placeholder-gray-400 rounded-2xl px-6 py-4 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500/50 border border-purple-500/30 text-base"
-                rows={3}
-                disabled={isLoading}
-              />
-              <div className="flex flex-col space-y-4">
-                <button
-                  onClick={handleSendMessage}
-                  disabled={isLoading || !inputMessage.trim()}
-                  className="send-button text-white px-8 py-4 rounded-2xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3 font-medium"
-                >
-                  <Send className="w-6 h-6" />
-                  Send
-                </button>
+          {dialogOpen && (
+            <div className="max-w-3xl mx-auto mb-8 p-6 rounded-2xl bg-black/70 border border-white/30 shadow-xl backdrop-blur-xl overflow-y-auto max-h-96">
+              <div className="space-y-6">
+                {messages.map((message, idx) => (
+                  <div key={message.id} className={`text-lg ${message.type === 'bot' ? 'text-white font-bold' : 'text-white font-medium'} text-left`}> 
+                    <span className="block">{message.type === 'bot' ? 'AI: ' : 'You: '}{message.content}</span>
+                  </div>
+                ))}
               </div>
             </div>
-          </div>
-        </motion.div>
-      </div>
+          )}
+
+          {/* Enhanced Input Area */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.1, duration: 0.6 }}
+            className="max-w-4xl mx-auto"
+          >
+            <div className="input-container rounded-3xl p-8 bg-black/40 border-2 border-white/30 shadow-2xl backdrop-blur-xl">
+              <div className="flex space-x-6">
+                <textarea
+                  ref={chatInputRef}
+                  value={inputMessage}
+                  onChange={(e) => setInputMessage(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Ask me about your business or speak to me..."
+                  className="flex-1 bg-black/40 text-white placeholder-white/60 rounded-2xl px-6 py-4 resize-none focus:outline-none focus:ring-2 focus:ring-white/50 border border-white/30 text-lg font-medium"
+                  rows={3}
+                  disabled={isLoading}
+                />
+                <div className="flex flex-col space-y-4">
+                  <button
+                    onClick={handleSendMessage}
+                    disabled={isLoading || !inputMessage.trim()}
+                    className="send-button text-white px-8 py-4 rounded-2xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3 font-semibold shadow-lg hover:shadow-white/30 hover:scale-105 bg-gradient-to-r from-white to-white/10"
+                  >
+                    <Send className="w-6 h-6 text-white" />
+                    Send
+                  </button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </StyledVoiceAdvisor>
     </StyledVoiceAdvisor>
   );
 };

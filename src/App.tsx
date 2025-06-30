@@ -24,7 +24,6 @@ import PaymentPage from "./components/PaymentPage";
 import PaymentsPage from "./components/PaymentsPage";
 import UpgradeModal from './components/UpgradeModal';
 import InvestorAnalyticsPage from "./components/InvestorAnalyticsPage.tsx";
-import PendingInvestment from "./components/PendingInvestment";
 
 const AppContent = () => {
   const location = useLocation();
@@ -207,14 +206,6 @@ const AppContent = () => {
             element={
               <PageTransition>
                 <InvestorAnalyticsPage />
-              </PageTransition>
-            }
-          />
-          <Route
-            path="/pending-investments"
-            element={
-              <PageTransition>
-                <PendingInvestment />
               </PageTransition>
             }
           />

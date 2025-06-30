@@ -266,13 +266,6 @@ const ErrorText = styled.div`
   font-size: 0.95rem;
 `;
 
-type PendingInvestment = {
-  _id: string;
-  amount: number;
-  equity: number;
-  investorId: string;
-};
-
 const AnalyticsPage: React.FC = () => {
   const { startupId } = useParams();
   const [forecastMonthsCount, setForecastMonthsCount] = useState(DEFAULT_FORECAST_MONTHS);
@@ -297,10 +290,6 @@ const AnalyticsPage: React.FC = () => {
   const [newStakeholder, setNewStakeholder] = useState({ name: '', percentage: 0 });
   const [valuationInput, setValuationInput] = useState<string>('');
   const [equityError, setEquityError] = useState('');
-  const [pendingInvestments, setPendingInvestments] = useState<PendingInvestment[]>([]);
-  const [pendingLoading, setPendingLoading] = useState(false);
-  const [pendingError, setPendingError] = useState("");
-  const [userRole, setUserRole] = useState<"startup" | "investor" | null>(null);
 
   // Fetch monthly data from MongoDB on component mount
   useEffect(() => {
@@ -379,48 +368,6 @@ const AnalyticsPage: React.FC = () => {
     };
     fetchEquity();
   }, [startupId]);
-
-  useEffect(() => {
-    // Only fetch if user is a startup (add your own user role check if needed)
-    const fetchPendingInvestments = async () => {
-      setPendingLoading(true);
-      setPendingError("");
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) return;
-        const res = await fetch("http://localhost:3001/api/startup/pending-investments", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) throw new Error("Failed to fetch pending investments");
-        const data = await res.json();
-        setPendingInvestments(data.investments || []);
-      } catch (err) {
-        setPendingError("Error loading pending investments");
-      } finally {
-        setPendingLoading(false);
-      }
-    };
-    fetchPendingInvestments();
-  }, []);
-
-  useEffect(() => {
-    const fetchUserRole = async () => {
-      const token = localStorage.getItem("token");
-      if (!token) return;
-      try {
-        const response = await fetch("http://localhost:3001/api/user/profile", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setUserRole(data.role);
-        }
-      } catch (error) {
-        // ignore
-      }
-    };
-    fetchUserRole();
-  }, []);
 
   const handleSimulate = () => {
     if (monthsData.length === 0) {
@@ -548,24 +495,6 @@ const AnalyticsPage: React.FC = () => {
         });
       } catch {}
     }
-  };
-
-  const handleApprove = async (id: string) => {
-    const token = localStorage.getItem("token");
-    await fetch(`http://localhost:3001/api/investments/${id}/approve`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    setPendingInvestments(pendingInvestments.filter(inv => inv._id !== id));
-  };
-
-  const handleReject = async (id: string) => {
-    const token = localStorage.getItem("token");
-    await fetch(`http://localhost:3001/api/investments/${id}/reject`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    setPendingInvestments(pendingInvestments.filter(inv => inv._id !== id));
   };
 
   if (loading) {
@@ -1013,29 +942,6 @@ const AnalyticsPage: React.FC = () => {
               </form>
             )}
           </EquitySection>
-
-          {/* Pending Investments Dashboard */}
-          {userRole === 'startup' && (pendingLoading ? (
-            <div className="p-4 text-center">Loading pending investments...</div>
-          ) : pendingInvestments.length > 0 ? (
-            <div className="p-4 bg-purple-900/10 rounded-xl mb-6">
-              <h2 className="text-xl font-bold mb-2 text-purple-400">Pending Investment Requests</h2>
-              <ul>
-                {pendingInvestments.map(inv => (
-                  <li key={inv._id} className="mb-3 flex items-center justify-between bg-purple-900/20 p-3 rounded">
-                    <div>
-                      <div className="font-semibold text-white">Amount: ${inv.amount} | Equity: {inv.equity}%</div>
-                      <div className="text-sm text-gray-300">Investor ID: {inv.investorId}</div>
-                    </div>
-                    <div className="flex space-x-2">
-                      <button onClick={() => handleApprove(inv._id)} className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700">Approve</button>
-                      <button onClick={() => handleReject(inv._id)} className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700">Reject</button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null)}
         </div>
       </div>
     </div>

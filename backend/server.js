@@ -1279,57 +1279,6 @@ app.get('/api/startups', async (req, res) => {
   }
 });
 
-// GET /api/startup/pending-investments - Get all pending investments for the logged-in startup
-app.get('/api/startup/pending-investments', authenticateToken, async (req, res) => {
-  try {
-    const database = await connectToDatabase();
-    // Find the startup profile for the logged-in user
-    const startupProfile = await database.collection('startup_profiles').findOne({ userId: req.user.userId });
-    if (!startupProfile) {
-      return res.status(404).json({ error: 'Startup profile not found' });
-    }
-    // Find all pending investments for this startup
-    const pendingInvestments = await database.collection('investments')
-      .find({ startupId: startupProfile._id, status: 'pending' })
-      .toArray();
-    res.json({ success: true, investments: pendingInvestments });
-  } catch (err) {
-    console.error('Failed to fetch pending investments:', err);
-    res.status(500).json({ error: 'Failed to fetch pending investments' });
-  }
-});
-
-// POST /api/investments/:id/approve
-app.post('/api/investments/:id/approve', authenticateToken, async (req, res) => {
-  try {
-    const database = await connectToDatabase();
-    const investmentId = req.params.id;
-    // Optionally, check that the logged-in user owns the startup
-    await database.collection('investments').updateOne(
-      { _id: new ObjectId(investmentId) },
-      { $set: { status: 'approved', approvedAt: new Date() } }
-    );
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to approve investment' });
-  }
-});
-
-// POST /api/investments/:id/reject
-app.post('/api/investments/:id/reject', authenticateToken, async (req, res) => {
-  try {
-    const database = await connectToDatabase();
-    const investmentId = req.params.id;
-    await database.collection('investments').updateOne(
-      { _id: new ObjectId(investmentId) },
-      { $set: { status: 'rejected', rejectedAt: new Date() } }
-    );
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to reject investment' });
-  }
-});
-
 // ===== Matchmaking Endpoints =====
 
 // POST /api/match/like - Record a like and check for mutual match
@@ -1424,30 +1373,6 @@ app.get('/api/match/list', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Get matches error:', error);
     res.status(500).json({ error: 'Failed to fetch matches' });
-  }
-});
-
-// POST /api/investments - Create a new investment request
-app.post('/api/investments', authenticateToken, async (req, res) => {
-  try {
-    const { startupId, amount, equity } = req.body;
-    if (!startupId || !amount || !equity) {
-      return res.status(400).json({ error: 'Missing required fields' });
-    }
-    const database = await connectToDatabase();
-    const investment = {
-      investorId: new ObjectId(req.user.userId),
-      startupId: new ObjectId(startupId),
-      amount: Number(amount),
-      equity: Number(equity),
-      status: 'pending',
-      createdAt: new Date()
-    };
-    await database.collection('investments').insertOne(investment);
-    res.json({ success: true, investment });
-  } catch (err) {
-    console.error('Failed to create investment:', err);
-    res.status(500).json({ error: 'Failed to create investment' });
   }
 });
 

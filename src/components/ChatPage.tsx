@@ -21,7 +21,6 @@ import {
 import data from "@emoji-mart/data";
 import Picker from "@emoji-mart/react";
 import { io, Socket } from "socket.io-client";
-import { Dialog } from '@headlessui/react';
 
 const StyledChatPage = styled.div`
   background: linear-gradient(
@@ -266,12 +265,6 @@ const ChatPage: React.FC = () => {
   );
   const [userId, setUserId] = useState<string | null>(null);
   const navigate = useNavigate();
-  const [showInvestModal, setShowInvestModal] = useState(false);
-  const [investmentAmount, setInvestmentAmount] = useState('');
-  const [investmentEquity, setInvestmentEquity] = useState('');
-  const [investLoading, setInvestLoading] = useState(false);
-  const [investError, setInvestError] = useState('');
-  const [investSuccess, setInvestSuccess] = useState(false);
 
   useEffect(() => {
     fetchUserRole();
@@ -577,44 +570,13 @@ const ChatPage: React.FC = () => {
   const activeContact = contacts.find((c) => c.id === activeChat);
 
   const handleInvestClick = () => {
-    setShowInvestModal(true);
-  };
-
-  const handleInvestSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setInvestLoading(true);
-    setInvestError('');
-    setInvestSuccess(false);
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) throw new Error('Not authenticated');
-      if (!activeChat) throw new Error('No startup selected');
-      if (!investmentAmount || !investmentEquity) throw new Error('Please enter all fields');
-      const res = await fetch('http://localhost:3001/api/investments', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          startupId: activeChat,
-          amount: Number(investmentAmount),
-          equity: Number(investmentEquity)
-        })
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || 'Failed to invest');
-      }
-      setInvestSuccess(true);
-      setInvestmentAmount('');
-      setInvestmentEquity('');
-      setShowInvestModal(false);
-    } catch (err: any) {
-      setInvestError(err.message || 'Error making investment');
-    } finally {
-      setInvestLoading(false);
-    }
+    navigate("/payments", {
+      state: {
+        startupId: activeChat,
+        startupName: activeContact?.name,
+        startupCompany: activeContact?.company,
+      },
+    });
   };
 
   return (
@@ -740,23 +702,25 @@ const ChatPage: React.FC = () => {
                     </div>
                   </div>
                   <div className="flex items-center space-x-4">
-                    <motion.button
-                      onClick={handleInvestClick}
-                      whileHover={{
-                        scale: 1.05,
-                        boxShadow: "0 0 20px rgba(139, 92, 246, 0.5)",
-                      }}
-                      whileTap={{ scale: 0.95 }}
-                      className="invest-button px-6 py-2 rounded-full bg-gradient-to-r from-purple-600/80 to-purple-800/80 text-white font-medium backdrop-blur-sm border border-purple-500/30 shadow-lg relative overflow-hidden"
-                      style={{
-                        WebkitBackdropFilter: "blur(8px)",
-                        backdropFilter: "blur(8px)",
-                      }}
-                    >
-                      <span className="relative z-10">Invest Now</span>
-                      <div className="absolute inset-0 bg-gradient-to-r from-purple-600/20 to-purple-800/20 animate-pulse" />
-                      <div className="absolute inset-0 bg-gradient-to-r from-purple-400/10 to-purple-600/10 transform rotate-180" />
-                    </motion.button>
+                    {userRole !== 'startup' && (
+                      <motion.button
+                        onClick={handleInvestClick}
+                        whileHover={{
+                          scale: 1.05,
+                          boxShadow: "0 0 20px rgba(139, 92, 246, 0.5)",
+                        }}
+                        whileTap={{ scale: 0.95 }}
+                        className="invest-button px-6 py-2 rounded-full bg-gradient-to-r from-purple-600/80 to-purple-800/80 text-white font-medium backdrop-blur-sm border border-purple-500/30 shadow-lg relative overflow-hidden"
+                        style={{
+                          WebkitBackdropFilter: "blur(8px)",
+                          backdropFilter: "blur(8px)",
+                        }}
+                      >
+                        <span className="relative z-10">Invest Now</span>
+                        <div className="absolute inset-0 bg-gradient-to-r from-purple-600/20 to-purple-800/20 animate-pulse" />
+                        <div className="absolute inset-0 bg-gradient-to-r from-purple-400/10 to-purple-600/10 transform rotate-180" />
+                      </motion.button>
+                    )}
                     <motion.button
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.95 }}
@@ -998,49 +962,6 @@ const ChatPage: React.FC = () => {
           }
         }
       `}</style>
-      {/* Invest Now Modal */}
-      <Dialog open={showInvestModal} onClose={() => setShowInvestModal(false)} className="fixed z-50 inset-0 overflow-y-auto">
-        <div className="flex items-center justify-center min-h-screen px-4">
-          {/* Overlay replacement for Dialog.Overlay */}
-          <div className="fixed inset-0 bg-black bg-opacity-50" aria-hidden="true" />
-          <div className="relative bg-[#181028] rounded-xl p-8 w-full max-w-md mx-auto z-10">
-            <Dialog.Title className="text-xl font-bold mb-4 text-white">Invest in {activeContact?.name}</Dialog.Title>
-            <form onSubmit={handleInvestSubmit} className="space-y-4">
-              <div>
-                <label className="block text-gray-300 mb-1">Investment Amount ($)</label>
-                <input
-                  type="number"
-                  min="1"
-                  className="w-full px-4 py-2 rounded bg-[#222] text-white border border-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  value={investmentAmount}
-                  onChange={e => setInvestmentAmount(e.target.value)}
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-gray-300 mb-1">Equity (%)</label>
-                <input
-                  type="number"
-                  min="0.01"
-                  max="100"
-                  step="0.01"
-                  className="w-full px-4 py-2 rounded bg-[#222] text-white border border-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  value={investmentEquity}
-                  onChange={e => setInvestmentEquity(e.target.value)}
-                  required
-                />
-              </div>
-              {investError && <div className="text-red-500 text-sm">{investError}</div>}
-              <div className="flex justify-end space-x-2">
-                <button type="button" onClick={() => setShowInvestModal(false)} className="px-4 py-2 rounded bg-gray-600 text-white">Cancel</button>
-                <button type="submit" disabled={investLoading} className="px-4 py-2 rounded bg-purple-600 text-white font-bold hover:bg-purple-700 disabled:opacity-50">
-                  {investLoading ? 'Investing...' : 'Invest'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </Dialog>
     </StyledChatPage>
   );
 };

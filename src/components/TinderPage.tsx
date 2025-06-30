@@ -25,6 +25,14 @@ import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
 import Stack from './Stack';
 import bgVideo from '../bg.mp4';
+import investor1 from './assets/investor/investor1.jpeg';
+import investor2 from './assets/investor/investor2.jpeg';
+import investor3 from './assets/investor/investor3.jpeg';
+import investor4 from './assets/investor/investor4.jpeg';
+import startup1 from './assets/startup/startup1.png';
+import startup2 from './assets/startup/startup2.png';
+import startup3 from './assets/startup/startup3.jpeg';
+import startup4 from './assets/startup/startup4.png';
 
 const Card = styled(motion.div)`
   position: absolute;
@@ -377,6 +385,9 @@ function TinderPage() {
         });
         if (!res.ok) throw new Error("Failed to fetch profiles");
         const data = await res.json();
+        // Static image arrays
+        const investorImages = [investor1, investor2, investor3, investor4];
+        const startupImages = [startup1, startup2, startup3, startup4];
         // Map backend data to CardData format if needed
         const mapped = (data.profiles || data).map((item: any, idx: number) => {
           if (userRole === "startup") {
@@ -387,10 +398,7 @@ function TinderPage() {
               type: "investor",
               company: item.company || item.firm || "",
               description: item.bio || item.description || "",
-              image:
-                item.avatar ||
-                item.image ||
-                "https://randomuser.me/api/portraits/men/1.jpg",
+              image: investorImages[idx % investorImages.length],
               investmentFocus: Array.isArray(item.investmentFocus)
                 ? item.investmentFocus
                 : typeof item.investmentFocus === "string" &&
@@ -416,7 +424,11 @@ function TinderPage() {
               type: "startup",
               company: item.companyName || item.name || "",
               description: item.description || "",
+<<<<<<< HEAD
               image: imageUrl,
+=======
+              image: startupImages[idx % startupImages.length],
+>>>>>>> 4d12ccf7b7adc8acee5bd3a9052d895cc29bcce4
               stage: item.stage || "",
               industry: item.industry || "",
               funding: item.fundingNeeded || "",

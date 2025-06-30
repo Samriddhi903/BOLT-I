@@ -664,7 +664,10 @@ const ProfileEditPage: React.FC = () => {
   // Photo upload handlers
   const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      setPhotoError("No file selected");
+      return;
+    }
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
@@ -682,46 +685,57 @@ const ProfileEditPage: React.FC = () => {
       setUploadingPhoto(true);
       setPhotoError(null);
 
-      const formData = new FormData();
-      formData.append('photo', file);
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        if (!reader.result) {
+          setPhotoError("FileReader failed to read file");
+          setUploadingPhoto(false);
+          return;
+        }
 
-      const token = localStorage.getItem('token');
-      if (!token) {
-        navigate('/login');
-        return;
-      }
+        const base64String = (reader.result as string).split(',')[1];
 
-      const response = await fetch('http://localhost:3001/api/user/upload-photo', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formData
-      });
+        const token = localStorage.getItem('token');
+        if (!token) {
+          navigate('/login');
+          setUploadingPhoto(false);
+          return;
+        }
 
-      const data = await response.json();
+        const response = await fetch('http://localhost:3001/api/user/upload-photo', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ base64: base64String })
+        });
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to upload photo');
-      }
+        const data = await response.json();
 
-      // Update the profile with the new photo URL
-      const photoUrl = data.photoUrl;
-      
-      if (userProfile?.role === 'startup') {
-        setStartupProfile(prev => ({ ...prev, logo: photoUrl }));
-      } else if (userProfile?.role === 'investor') {
-        setInvestorProfile(prev => ({ ...prev, avatar: photoUrl }));
-      }
+        if (!response.ok) {
+          setPhotoError(data.error || 'Failed to upload photo');
+          setUploadingPhoto(false);
+          return;
+        }
 
-      setSuccess('Profile photo updated successfully!');
-      setTimeout(() => setSuccess(null), 3000);
+        // Update the profile with the new base64 string
+        const base64Url = `data:image/jpeg;base64,${base64String}`;
+        if (userProfile?.role === 'startup') {
+          setStartupProfile(prev => ({ ...prev, logo: base64Url }));
+        } else if (userProfile?.role === 'investor') {
+          setInvestorProfile(prev => ({ ...prev, avatar: base64Url }));
+        }
 
+        setSuccess('Profile photo updated successfully!');
+        setTimeout(() => setSuccess(null), 3000);
+        setUploadingPhoto(false);
+      };
+      reader.readAsDataURL(file);
     } catch (err) {
       setPhotoError(err instanceof Error ? err.message : 'Failed to upload photo');
-    } finally {
       setUploadingPhoto(false);
-      // Reset file input
+    } finally {
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }

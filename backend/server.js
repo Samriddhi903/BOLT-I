@@ -435,10 +435,10 @@ app.get('/health', (req, res) => {
 // POST /api/auth/signup
 app.post('/api/auth/signup', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, photo } = req.body;
     
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required' });
+    if (!email || !password || !photo || !photo.data || !photo.contentType) {
+      return res.status(400).json({ error: 'Email, password, and profile photo are required' });
     }
 
     const database = await connectToDatabase();
@@ -458,7 +458,11 @@ app.post('/api/auth/signup', async (req, res) => {
       email,
       password: hashedPassword,
       createdAt: new Date().toISOString(),
-      lastLogin: null
+      lastLogin: null,
+      photo: {
+        data: new Buffer.from(photo.data, 'base64'),
+        contentType: photo.contentType
+      }
     };
 
     const result = await database.collection('users').insertOne(user);
@@ -477,7 +481,8 @@ app.post('/api/auth/signup', async (req, res) => {
       user: {
         id: result.insertedId,
         email: user.email,
-        createdAt: user.createdAt
+        createdAt: user.createdAt,
+        photo: user.photo
       }
     });
 
@@ -1061,42 +1066,17 @@ app.get('/api/user/profile', authenticateToken, async (req, res) => {
   }
 });
 
-// POST /api/user/upload-photo
-app.post('/api/user/upload-photo', authenticateToken, upload.single('photo'), async (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: 'No file uploaded' });
-  }
+// POST /api/user/upload-photo (accepts base64 JSON)
+app.post('/api/user/upload-photo', authenticateToken, async (req, res) => {
   try {
+    const { base64 } = req.body;
+    if (!base64) return res.status(400).json({ error: 'No image data' });
     const database = await connectToDatabase();
     const userId = req.user.userId;
-    // Read file as base64
-    const fileBuffer = fs.readFileSync(req.file.path);
-    const base64String = fileBuffer.toString('base64');
-    // Store in user profile
     await database.collection('users').updateOne(
       { _id: new ObjectId(userId) },
-      { $set: { profilePhoto: base64String, photoUpdatedAt: new Date().toISOString() } }
+      { $set: { profilePhoto: base64, photoUpdatedAt: new Date().toISOString() } }
     );
-    // Also store in startup_profiles if user is a startup
-    const user = await database.collection('users').findOne({ _id: new ObjectId(userId) });
-    if (user && user.role === 'startup') {
-      // Always use userId as a string for matching and storing
-      const userIdStr = String(userId);
-      console.log('Uploading photo for startup userId:', userIdStr);
-      const result = await database.collection('startup_profiles').updateOne(
-        { userId: userIdStr },
-        { $set: { photo: base64String, updatedAt: new Date().toISOString() } },
-        { upsert: true }
-      );
-      console.log('startup_profiles update result:', result);
-      if (result.upsertedCount > 0) {
-        console.log(`Created new startup_profiles entry for userId ${userIdStr}`);
-      } else if (result.modifiedCount > 0) {
-        console.log(`Updated photo for startup_profiles entry userId ${userIdStr}`);
-      } else {
-        console.warn(`No startup_profiles entry updated for userId ${userIdStr}`);
-      }
-    }
     // Optionally delete file from disk
     fs.unlinkSync(req.file.path);
     res.json({ success: true, base64: base64String });

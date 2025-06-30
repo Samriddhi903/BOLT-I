@@ -131,7 +131,7 @@ const LoginSignupPage: React.FC = () => {
     setError("");
 
     // Validation
-    if (!fields.email || !fields.password) {
+    if (!fields.email || !fields.password || (mode === 'signup' && !fields.confirmPassword)) {
       setError("Please fill in all required fields");
       setLoading(false);
       return;

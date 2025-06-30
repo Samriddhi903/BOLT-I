@@ -79,7 +79,7 @@ const Navigation: React.FC = () => {
     { name: "Chatbot", path: "/voice-advisor" },
     { name: "Resources", path: "/resources" },
     { name: "Chat", path: "/chat" },
-    { name: "Tinder-style interface", path: "/tinder" },
+    { name: "Matching", path: "/tinder" },
     { name: "Payments", path: "/payments" },
   ];
 
@@ -98,7 +98,7 @@ const Navigation: React.FC = () => {
             <div className="relative">
               <Zap className="w-6 h-6 text-purple-300 group-hover:text-purple-400 transition-colors duration-200" />
             </div>
-            <span className="text-xl font-semibold text-white">TechFlow</span>
+            <span className="text-xl font-semibold text-white">PitchNest</span>
           </Link>
 
           {/* Desktop Navigation */}

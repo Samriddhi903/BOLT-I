@@ -21,6 +21,14 @@ import {
 import data from "@emoji-mart/data";
 import Picker from "@emoji-mart/react";
 import { io, Socket } from "socket.io-client";
+import investor1 from './assets/investor/investor1.jpeg';
+import investor2 from './assets/investor/investor2.jpeg';
+import investor3 from './assets/investor/investor3.jpeg';
+import investor4 from './assets/investor/investor4.jpeg';
+import startup1 from './assets/startup/startup1.png';
+import startup2 from './assets/startup/startup2.png';
+import startup3 from './assets/startup/startup3.jpeg';
+import startup4 from './assets/startup/startup4.png';
 
 const StyledChatPage = styled.div`
   background: linear-gradient(
@@ -419,17 +427,18 @@ const ChatPage: React.FC = () => {
 
       if (response.ok) {
         const data = await response.json();
-        const mappedContacts = data.profiles.map((profile: any) => ({
+        // Static image arrays
+        const investorImages = [investor1, investor2, investor3, investor4];
+        const startupImages = [startup1, startup2, startup3, startup4];
+        const mappedContacts = data.profiles.map((profile: any, idx: number) => ({
           id: profile.userId || profile._id,
           name: role === "startup" ? profile.fullName : profile.companyName,
           role: role === "startup" ? profile.role : "Startup",
           company: role === "startup" ? profile.company : profile.industry,
           avatar:
-            profile.avatar ||
-            profile.logo ||
-            `https://randomuser.me/api/portraits/${
-              role === "startup" ? "men" : "women"
-            }/1.jpg`,
+            role === "startup"
+              ? investorImages[idx % investorImages.length]
+              : startupImages[idx % startupImages.length],
           status: "online",
           lastMessage: "Click to start chatting",
           unread: 0,

@@ -38,7 +38,7 @@ const Card = styled(motion.div)`
   overflow: hidden;
   cursor: grab;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-
+  
   &:active {
     cursor: grabbing;
   }
@@ -57,7 +57,7 @@ const CardImage = styled.div<{ $imageUrl: string }>`
   background-size: cover;
   background-position: center;
   position: relative;
-
+  
   &::before {
     content: "";
     position: absolute;
@@ -114,7 +114,7 @@ const ActionButton = styled(motion.button)<{ $variant: "like" | "dislike" }>`
           ? "rgba(16, 185, 129, 0.3)"
           : "rgba(239, 68, 68, 0.3)"};
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-
+  
   &:hover {
     transform: scale(1.1) translateY(-2px);
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4),
@@ -183,7 +183,7 @@ const Particle = styled.div<{ $delay: number }>`
 
 const GlowEffect = styled.div`
   position: relative;
-
+  
   &::before {
     content: "";
     position: absolute;
@@ -197,7 +197,7 @@ const GlowEffect = styled.div`
     opacity: 0;
     transition: opacity 0.3s ease;
   }
-
+  
   &:hover::before {
     opacity: 0.3;
   }
@@ -393,7 +393,7 @@ const TinderPage: React.FC = () => {
                 ? item.investmentFocus
                 : typeof item.investmentFocus === "string" &&
                   item.investmentFocus.length > 0
-                ? [item.investmentFocus]
+                    ? [item.investmentFocus]
                 : [],
               portfolioSize: item.portfolioSize || "",
               tags: item.tags || [],
@@ -611,7 +611,7 @@ const TinderPage: React.FC = () => {
               later for new opportunities.
             </motion.p>
           </motion.div>
-
+          
           <motion.button
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -677,7 +677,7 @@ const TinderPage: React.FC = () => {
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 py-8">
           {/* Enhanced Header */}
-          <motion.div
+          <motion.div 
             initial={{ opacity: 0, y: -30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
@@ -715,7 +715,7 @@ const TinderPage: React.FC = () => {
           </motion.div>
 
           {/* Enhanced Card Container */}
-          <motion.div
+          <motion.div 
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.8 }}
@@ -766,7 +766,7 @@ const TinderPage: React.FC = () => {
                         .slice(0, 3)
                         .map((tag: string, index: number) => (
                           <Tag key={index}>{tag}</Tag>
-                        ))}
+                      ))}
                     </div>
                   </div>
                 </CardImage>
@@ -838,7 +838,7 @@ const TinderPage: React.FC = () => {
               </Card>
 
               {/* Enhanced Action buttons */}
-              <motion.div
+              <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5, duration: 0.6 }}
@@ -853,7 +853,7 @@ const TinderPage: React.FC = () => {
                 >
                   <X className="w-8 h-8" />
                 </ActionButton>
-
+                
                 <ActionButton
                   $variant="like"
                   onClick={handleLike}
@@ -868,7 +868,7 @@ const TinderPage: React.FC = () => {
           </motion.div>
 
           {/* Enhanced Stats */}
-          <motion.div
+          <motion.div 
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7, duration: 0.6 }}
@@ -903,4 +903,4 @@ const TinderPage: React.FC = () => {
   );
 };
 
-export default TinderPage;
+export default TinderPage; 

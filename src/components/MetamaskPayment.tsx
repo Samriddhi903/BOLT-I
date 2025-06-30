@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { ethers } from 'ethers';
+import React, { useState, useEffect } from "react";
+import { ethers } from "ethers";
+import { motion } from "framer-motion";
+import { Wallet, AlertCircle, CheckCircle, Loader } from "lucide-react";
 
 declare global {
   interface Window {
@@ -7,7 +9,7 @@ declare global {
   }
 }
 
-const RECEIVER_ADDRESS = '0x60e6bc25c838fC0D06e96c05A9cF625ddCaE6675'; // Replace with your wallet address
+const RECEIVER_ADDRESS = "0x60e6bc25c838fC0D06e96c05A9cF625ddCaE6675"; // Replace with your wallet address
 
 interface MetamaskPaymentProps {
   amountUsd: number;
@@ -16,12 +18,15 @@ interface MetamaskPaymentProps {
 
 const USD_TO_ETH = 0.00032; // Placeholder conversion rate, replace with real-time rate if needed
 
-const MetamaskPayment: React.FC<MetamaskPaymentProps> = ({ amountUsd, onPaymentSuccess }) => {
+const MetamaskPayment: React.FC<MetamaskPaymentProps> = ({
+  amountUsd,
+  onPaymentSuccess,
+}) => {
   const [account, setAccount] = useState<string | null>(null);
   const [txHash, setTxHash] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [ethAmount, setEthAmount] = useState('');
+  const [ethAmount, setEthAmount] = useState("");
 
   useEffect(() => {
     // Convert USD to ETH (static for now)
@@ -31,27 +36,29 @@ const MetamaskPayment: React.FC<MetamaskPaymentProps> = ({ amountUsd, onPaymentS
   const connectWallet = async () => {
     if (window.ethereum) {
       try {
-        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        const accounts = await window.ethereum.request({
+          method: "eth_requestAccounts",
+        });
         setAccount(accounts[0]);
         setError(null);
       } catch (err: any) {
-        setError('User rejected wallet connection');
+        setError("User rejected wallet connection");
       }
     } else {
-      setError('Metamask not detected. Please install Metamask.');
+      setError("Metamask not detected. Please install Metamask.");
     }
   };
 
   const sendPayment = async () => {
     if (!account) {
-      setError('Please connect your wallet first.');
+      setError("Please connect your wallet first.");
       return;
     }
     if (!ethAmount || isNaN(Number(ethAmount)) || Number(ethAmount) <= 0) {
-      setError('Invalid amount.');
+      setError("Invalid amount.");
       return;
     }
-    setStatus('Pending...');
+    setStatus("Pending...");
     setError(null);
     setTxHash(null);
     try {
@@ -61,54 +68,113 @@ const MetamaskPayment: React.FC<MetamaskPaymentProps> = ({ amountUsd, onPaymentS
         to: RECEIVER_ADDRESS,
         value: ethers.parseEther(ethAmount),
       });
-      setStatus('Transaction sent. Waiting for confirmation...');
+      setStatus("Transaction sent. Waiting for confirmation...");
       await tx.wait();
       setTxHash(tx.hash);
-      setStatus('Payment successful!');
+      setStatus("Payment successful!");
       if (onPaymentSuccess) onPaymentSuccess(tx.hash);
     } catch (err: any) {
-      setError(err.message || 'Transaction failed');
+      setError(err.message || "Transaction failed");
       setStatus(null);
     }
   };
 
   return (
-    <div className="bg-gray-900 p-6 rounded-lg shadow-lg w-full max-w-md mx-auto">
-      <h2 className="text-xl font-bold mb-4 text-white">Pay with Metamask</h2>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className="space-y-6"
+    >
       {!account ? (
-        <button
+        <motion.button
           onClick={connectWallet}
-          className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded mb-4 w-full"
+          className="w-full p-4 rounded-xl bg-gradient-to-r from-orange-500 to-yellow-500 text-white font-bold shadow-lg shadow-orange-500/20 hover:shadow-orange-500/30 transition-all flex items-center justify-center gap-3"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
         >
+          <Wallet className="w-6 h-6" />
           Connect Metamask
-        </button>
+        </motion.button>
       ) : (
-        <div className="mb-4 text-green-400">Connected: {account}</div>
-      )}
-      <div className="mb-2 text-gray-300">Amount to pay (USD): <span className="text-white font-bold">${amountUsd}</span></div>
-      <input
-        type="number"
-        value={ethAmount}
-        className="w-full p-2 mb-4 rounded bg-gray-800 text-white border border-gray-700"
-        disabled
-      />
-      <div className="mb-4 text-gray-400 text-xs">(ETH amount is approximate, based on current conversion rate)</div>
-      <button
-        onClick={sendPayment}
-        className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full"
-        disabled={!account}
-      >
-        Send Payment
-      </button>
-      {status && <div className="mt-4 text-blue-400">{status}</div>}
-      {txHash && (
-        <div className="mt-2 text-green-400 break-all">
-          Transaction Hash: <a href={`https://etherscan.io/tx/${txHash}`} target="_blank" rel="noopener noreferrer" className="underline">{txHash}</a>
+        <div className="p-4 rounded-xl bg-gradient-to-br from-gray-800/50 to-gray-900/50 border border-gray-700/50">
+          <div className="flex items-center gap-3 text-green-400">
+            <CheckCircle className="w-5 h-5" />
+            <span className="font-medium">Connected:</span>
+          </div>
+          <div className="mt-2 text-gray-300 font-mono text-sm break-all">
+            {account}
+          </div>
         </div>
       )}
-      {error && <div className="mt-4 text-red-400">{error}</div>}
-    </div>
+
+      <div className="space-y-4 p-4 rounded-xl bg-gradient-to-br from-gray-800/50 to-gray-900/50 border border-gray-700/50">
+        <div className="flex justify-between items-center">
+          <span className="text-gray-400">Amount (USD):</span>
+          <span className="text-white font-bold">${amountUsd}</span>
+        </div>
+        <div className="flex justify-between items-center">
+          <span className="text-gray-400">Amount (ETH):</span>
+          <span className="text-white font-mono">{ethAmount}</span>
+        </div>
+        <div className="text-xs text-gray-500 italic">
+          (ETH amount is approximate, based on current conversion rate)
+        </div>
+      </div>
+
+      <motion.button
+        onClick={sendPayment}
+        disabled={!account}
+        className={`w-full p-4 rounded-xl text-white font-bold shadow-lg transition-all flex items-center justify-center gap-3
+          ${
+            !account
+              ? "bg-gray-700 cursor-not-allowed"
+              : "bg-gradient-to-r from-blue-500 to-purple-500 shadow-blue-500/20 hover:shadow-blue-500/30"
+          }`}
+        whileHover={account ? { scale: 1.02 } : {}}
+        whileTap={account ? { scale: 0.98 } : {}}
+      >
+        {status === "Pending..." ? (
+          <Loader className="w-5 h-5 animate-spin" />
+        ) : (
+          <Wallet className="w-5 h-5" />
+        )}
+        {status || "Send Payment"}
+      </motion.button>
+
+      {error && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-4 rounded-xl bg-red-900/20 border border-red-500/20 text-red-400 flex items-center gap-3"
+        >
+          <AlertCircle className="w-5 h-5 flex-shrink-0" />
+          <span>{error}</span>
+        </motion.div>
+      )}
+
+      {txHash && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-4 rounded-xl bg-green-900/20 border border-green-500/20"
+        >
+          <div className="flex items-center gap-3 text-green-400 mb-2">
+            <CheckCircle className="w-5 h-5" />
+            <span className="font-medium">Transaction successful!</span>
+          </div>
+          <a
+            href={`https://etherscan.io/tx/${txHash}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-green-400/80 hover:text-green-400 underline break-all transition-colors"
+          >
+            {txHash}
+          </a>
+        </motion.div>
+      )}
+    </motion.div>
   );
 };
 
-export default MetamaskPayment; 
+export default MetamaskPayment;

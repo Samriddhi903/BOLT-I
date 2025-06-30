@@ -1160,9 +1160,9 @@ app.post('/api/match/like', authenticateToken, async (req, res) => {
       // Verify the roles are still opposite
       if (mutual.userRole !== currentUser.role) {
         // Store the match
-        const sortedUsers = [userId, targetUserId].sort();
-        await database.collection('mutual_matches').updateOne(
-          { users: sortedUsers },
+      const sortedUsers = [userId, targetUserId].sort();
+      await database.collection('mutual_matches').updateOne(
+        { users: sortedUsers },
           { 
             $set: { 
               users: sortedUsers,
@@ -1171,14 +1171,14 @@ app.post('/api/match/like', authenticateToken, async (req, res) => {
               matchedAt: new Date().toISOString() 
             } 
           },
-          { upsert: true }
-        );
+        { upsert: true }
+      );
         return res.json({ 
           success: true, 
           matched: true, 
           message: 'It\'s a match!' 
         });
-      }
+    }
     }
 
     res.json({ success: true, matched: false });

@@ -1077,6 +1077,26 @@ app.post('/api/user/upload-photo', authenticateToken, upload.single('photo'), as
       { _id: new ObjectId(userId) },
       { $set: { profilePhoto: base64String, photoUpdatedAt: new Date().toISOString() } }
     );
+    // Also store in startup_profiles if user is a startup
+    const user = await database.collection('users').findOne({ _id: new ObjectId(userId) });
+    if (user && user.role === 'startup') {
+      // Always use userId as a string for matching and storing
+      const userIdStr = String(userId);
+      console.log('Uploading photo for startup userId:', userIdStr);
+      const result = await database.collection('startup_profiles').updateOne(
+        { userId: userIdStr },
+        { $set: { photo: base64String, updatedAt: new Date().toISOString() } },
+        { upsert: true }
+      );
+      console.log('startup_profiles update result:', result);
+      if (result.upsertedCount > 0) {
+        console.log(`Created new startup_profiles entry for userId ${userIdStr}`);
+      } else if (result.modifiedCount > 0) {
+        console.log(`Updated photo for startup_profiles entry userId ${userIdStr}`);
+      } else {
+        console.warn(`No startup_profiles entry updated for userId ${userIdStr}`);
+      }
+    }
     // Optionally delete file from disk
     fs.unlinkSync(req.file.path);
     res.json({ success: true, base64: base64String });

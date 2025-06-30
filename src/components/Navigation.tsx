@@ -123,6 +123,27 @@ const Navigation: React.FC = () => {
                 />
               </span>
             </button>
+            {userRole === 'startup' && (
+              <Link
+                to="/pending-investments"
+                className={`relative text-sm font-medium transition-colors duration-200 ${
+                  location.pathname === "/pending-investments"
+                    ? "text-purple-400"
+                    : "text-gray-300 hover:text-purple-400"
+                }`}
+              >
+                <span className="relative">
+                  Pending Investments
+                  <span
+                    className={`absolute -bottom-1 left-0 w-full h-0.5 bg-purple-400 transform origin-left transition-transform duration-200 ${
+                      location.pathname === "/pending-investments"
+                        ? "scale-x-100"
+                        : "scale-x-0"
+                    }`}
+                  />
+                </span>
+              </Link>
+            )}
             {navItems.filter(item => item.name !== "Analytics").map((item) => (
               <Link
                 key={item.path}
@@ -234,6 +255,19 @@ const Navigation: React.FC = () => {
             >
               Analytics
             </button>
+            {userRole === 'startup' && (
+              <Link
+                to="/pending-investments"
+                className={`block px-3 py-2 rounded-md text-base font-medium transition-colors duration-200 ${
+                  location.pathname === "/pending-investments"
+                    ? "text-purple-400 bg-purple-900/20"
+                    : "text-gray-300 hover:text-purple-400 hover:bg-purple-900/10"
+                }`}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Pending Investments
+              </Link>
+            )}
             {navItems.filter(item => item.name !== "Analytics").map((item) => (
               <Link
                 key={item.path}

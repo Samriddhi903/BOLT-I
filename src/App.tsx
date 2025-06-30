@@ -24,6 +24,7 @@ import PaymentPage from "./components/PaymentPage";
 import PaymentsPage from "./components/PaymentsPage";
 import UpgradeModal from './components/UpgradeModal';
 import InvestorAnalyticsPage from "./components/InvestorAnalyticsPage.tsx";
+import BoltLogo from "./components/BoltLogo";
 
 const AppContent = () => {
   const location = useLocation();
@@ -219,6 +220,7 @@ const AppContent = () => {
 function App() {
   return (
     <Router>
+      <BoltLogo />
       <AppContent />
     </Router>
   );

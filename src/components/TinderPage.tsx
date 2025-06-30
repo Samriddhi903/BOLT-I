@@ -410,6 +410,14 @@ function TinderPage() {
             };
           } else {
             // Startup profile
+            let imageUrl = "https://source.unsplash.com/400x300/?startup";
+            if (item.photo) {
+              imageUrl = `data:image/jpeg;base64,${item.photo}`;
+            } else if (item.logo) {
+              imageUrl = item.logo;
+            } else if (item.image) {
+              imageUrl = item.image;
+            }
             return {
               id: item.userId || item._id || idx,
               name: item.companyName || item.name || "Startup",

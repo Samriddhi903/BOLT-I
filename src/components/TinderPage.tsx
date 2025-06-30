@@ -424,11 +424,7 @@ function TinderPage() {
               type: "startup",
               company: item.companyName || item.name || "",
               description: item.description || "",
-<<<<<<< HEAD
-              image: imageUrl,
-=======
               image: startupImages[idx % startupImages.length],
->>>>>>> 4d12ccf7b7adc8acee5bd3a9052d895cc29bcce4
               stage: item.stage || "",
               industry: item.industry || "",
               funding: item.fundingNeeded || "",

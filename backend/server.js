@@ -1077,9 +1077,7 @@ app.post('/api/user/upload-photo', authenticateToken, async (req, res) => {
       { _id: new ObjectId(userId) },
       { $set: { profilePhoto: base64, photoUpdatedAt: new Date().toISOString() } }
     );
-    // Optionally delete file from disk
-    fs.unlinkSync(req.file.path);
-    res.json({ success: true, base64: base64String });
+    res.json({ success: true, base64 });
   } catch (error) {
     console.error('Upload photo error:', error);
     res.status(500).json({ error: 'Failed to upload photo' });

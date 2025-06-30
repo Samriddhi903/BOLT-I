@@ -323,9 +323,24 @@ function simulateAdvancedGrowth(
 // Update the team size options to just have values
 const TEAM_SIZE_OPTIONS = [2, 3, 5, 10, 20] as const;
 
+const getEmptyMonth = (index: number) => ({
+  monthName: `Month ${index + 1}`,
+  marketingSpend: 3000,
+  burnRate: 8000,
+  cac: 30,
+  churnRate: 0.05,
+  arpu: 20,
+  teamSize: 3,
+  productImprovements: 0,
+  marketExpansion: 0,
+  fundingRound: null,
+});
+
 const AnalyticsPage: React.FC = () => {
   const { startupId } = useParams();
-  const [forecastMonthsCount, setForecastMonthsCount] = useState(0);
+  const [forecastMonthsCount, setForecastMonthsCount] = useState(
+    DEFAULT_FORECAST_MONTHS
+  );
   const [monthsData, setMonthsData] = useState<any[]>([]);
   const [simResult, setSimResult] = useState<any[]>([]);
   const [showTable, setShowTable] = useState(false);
@@ -338,6 +353,11 @@ const AnalyticsPage: React.FC = () => {
     initialTeamSize: 0,
   });
   const [startupName, setStartupName] = useState<string>("");
+  const [showAddMonth, setShowAddMonth] = useState(false);
+  const [newMonth, setNewMonth] = useState<any>(
+    getEmptyMonth(monthsData.length)
+  );
+  const [addMonthLoading, setAddMonthLoading] = useState(false);
 
   // Add validation for simulation start
   const canStartSimulation = useMemo(() => {
@@ -472,6 +492,45 @@ const AnalyticsPage: React.FC = () => {
     setError(null);
   };
 
+  // Add Month handler
+  const handleAddMonth = () => {
+    setNewMonth(getEmptyMonth(monthsData.length));
+    setShowAddMonth(true);
+  };
+
+  const handleNewMonthChange = (field: string, value: any) => {
+    setNewMonth((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleAddMonthSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAddMonthLoading(true);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/startups/${startupId}/months`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(newMonth),
+        }
+      );
+
+      if (!response.ok) throw new Error("Failed to add month");
+
+      const addedMonth = await response.json();
+      setMonthsData((prev) => [...prev, addedMonth]);
+      setShowAddMonth(false);
+      setNewMonth(getEmptyMonth(monthsData.length + 1));
+    } catch (err) {
+      console.error("Error adding month:", err);
+      setError("Failed to add month. Please try again.");
+    } finally {
+      setAddMonthLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#121212] flex items-center justify-center">
@@ -529,374 +588,265 @@ const AnalyticsPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {/* Initial Users Input */}
-              <motion.div
-                whileHover={{ scale: 1.02 }}
-                className={`bg-gray-800/50 backdrop-blur-md rounded-xl p-6 border ${
-                  simulationParams.initialUsers === 0
-                    ? "border-gray-700/30"
-                    : "border-gray-700/50"
-                } relative group`}
+            <div className="flex flex-wrap gap-6 mb-8">
+              <div>
+                <label className="block text-gray-200 font-medium mb-1">
+                  Historical Months:{" "}
+                  <span className="text-indigo-400">{monthsData.length}</span>
+                </label>
+                <p className="text-gray-500 text-sm">
+                  Data loaded from your startup profile
+                </p>
+              </div>
+              <div>
+                <label className="block text-gray-200 font-medium mb-1">
+                  Forecast Months:{" "}
+                  <span className="text-indigo-400">{forecastMonthsCount}</span>
+                </label>
+                <input
+                  type="range"
+                  min={1}
+                  max={36}
+                  value={forecastMonthsCount}
+                  onChange={(e) =>
+                    setForecastMonthsCount(Number(e.target.value))
+                  }
+                  className="w-48 accent-indigo-500"
+                />
+              </div>
+              <button
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-2 rounded-lg shadow"
+                onClick={handleSimulate}
+                disabled={monthsData.length === 0}
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-600/10 to-blue-600/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
-                <div className="flex items-center gap-4 mb-4">
-                  <div
-                    className={`p-3 ${
-                      simulationParams.initialUsers === 0
-                        ? "bg-purple-500/5"
-                        : "bg-purple-500/10"
-                    } rounded-xl group-hover:bg-purple-500/20 transition-colors`}
+                Run Advanced Simulation
+              </button>
+              <button
+                className="ml-2 text-sm text-gray-400 underline"
+                onClick={() => setShowTable((v) => !v)}
+              >
+                {showTable ? "Hide Table" : "Show Table"}
+              </button>
+              <button
+                className="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-2 rounded-lg shadow"
+                onClick={handleAddMonth}
+              >
+                + Add Month
+              </button>
+            </div>
+
+            {/* Add Month Modal */}
+            {showAddMonth && (
+              <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+                <form
+                  onSubmit={handleAddMonthSubmit}
+                  className="bg-[#18181b] rounded-xl p-8 w-full max-w-lg space-y-4 relative"
+                >
+                  <button
+                    type="button"
+                    className="absolute top-2 right-4 text-gray-400 text-2xl"
+                    onClick={() => setShowAddMonth(false)}
                   >
-                    <UsersIcon className="w-6 h-6 text-purple-400" />
-                  </div>
-                  <div>
-                    <RotatingText
-                      text="Initial Users"
-                      className="block text-gray-300 text-sm font-medium mb-1"
-                    />
-                    <RotatingText
-                      text="Required"
-                      className="text-xs text-gray-500"
-                      delay={0.1}
-                    />
-                  </div>
-                </div>
-                <div className="relative">
-                  <input
-                    type="number"
-                    value={
-                      simulationParams.initialUsers === 0
-                        ? ""
-                        : simulationParams.initialUsers
-                    }
-                    onChange={(e) =>
-                      handleInputChange(
-                        "initialUsers",
-                        e.target.value,
-                        INPUT_CONSTRAINTS.users
-                      )
-                    }
-                    min={0}
-                    max={INPUT_CONSTRAINTS.users.max}
-                    step={INPUT_CONSTRAINTS.users.step}
-                    className={`w-full bg-gray-900/50 border ${
-                      simulationParams.initialUsers === 0
-                        ? "border-gray-700/30 focus:border-purple-500/30"
-                        : "border-gray-700/50 focus:border-purple-500/50"
-                    } rounded-lg px-4 py-2.5 text-gray-100 focus:ring-2 focus:ring-purple-500/50 transition-all pl-4 pr-20`}
-                    placeholder="Enter users..."
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">
-                    users
-                  </span>
-                </div>
-                <div className="mt-3">
-                  <input
-                    type="range"
-                    min={0}
-                    max={INPUT_CONSTRAINTS.users.max}
-                    step={INPUT_CONSTRAINTS.users.step}
-                    value={simulationParams.initialUsers}
-                    onChange={(e) =>
-                      handleInputChange(
-                        "initialUsers",
-                        Number(e.target.value),
-                        INPUT_CONSTRAINTS.users
-                      )
-                    }
-                    className="w-full h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-500"
-                  />
-                  <div className="flex justify-between mt-2">
-                    {INPUT_CONSTRAINTS.users.presets.map((preset) => (
-                      <button
-                        key={preset.label}
-                        onClick={() =>
-                          handleInputChange(
-                            "initialUsers",
-                            preset.value,
-                            INPUT_CONSTRAINTS.users
+                    &times;
+                  </button>
+                  <h2 className="text-xl font-bold text-gray-100 mb-2">
+                    Add New Month
+                  </h2>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-gray-300 text-xs mb-1">
+                        Month Name
+                      </label>
+                      <input
+                        type="text"
+                        value={newMonth.monthName}
+                        onChange={(e) =>
+                          handleNewMonthChange("monthName", e.target.value)
+                        }
+                        className="w-full bg-[#23232b] text-gray-100 rounded px-2 py-1"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-gray-300 text-xs mb-1">
+                        Marketing Spend
+                      </label>
+                      <input
+                        type="number"
+                        value={newMonth.marketingSpend}
+                        onChange={(e) =>
+                          handleNewMonthChange(
+                            "marketingSpend",
+                            Number(e.target.value)
                           )
                         }
-                        className="px-2 py-1 text-xs rounded-md bg-gray-700/50 text-gray-300 hover:bg-purple-500/20 hover:text-purple-400 transition-colors"
+                        className="w-full bg-[#23232b] text-gray-100 rounded px-2 py-1"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-gray-300 text-xs mb-1">
+                        Burn Rate
+                      </label>
+                      <input
+                        type="number"
+                        value={newMonth.burnRate}
+                        onChange={(e) =>
+                          handleNewMonthChange(
+                            "burnRate",
+                            Number(e.target.value)
+                          )
+                        }
+                        className="w-full bg-[#23232b] text-gray-100 rounded px-2 py-1"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-gray-300 text-xs mb-1">
+                        CAC
+                      </label>
+                      <input
+                        type="number"
+                        value={newMonth.cac}
+                        onChange={(e) =>
+                          handleNewMonthChange("cac", Number(e.target.value))
+                        }
+                        className="w-full bg-[#23232b] text-gray-100 rounded px-2 py-1"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-gray-300 text-xs mb-1">
+                        Churn Rate
+                      </label>
+                      <input
+                        type="number"
+                        value={newMonth.churnRate}
+                        onChange={(e) =>
+                          handleNewMonthChange(
+                            "churnRate",
+                            Number(e.target.value)
+                          )
+                        }
+                        className="w-full bg-[#23232b] text-gray-100 rounded px-2 py-1"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-gray-300 text-xs mb-1">
+                        ARPU
+                      </label>
+                      <input
+                        type="number"
+                        value={newMonth.arpu}
+                        onChange={(e) =>
+                          handleNewMonthChange("arpu", Number(e.target.value))
+                        }
+                        className="w-full bg-[#23232b] text-gray-100 rounded px-2 py-1"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-gray-300 text-xs mb-1">
+                        Team Size
+                      </label>
+                      <input
+                        type="number"
+                        value={newMonth.teamSize}
+                        onChange={(e) =>
+                          handleNewMonthChange(
+                            "teamSize",
+                            Number(e.target.value)
+                          )
+                        }
+                        className="w-full bg-[#23232b] text-gray-100 rounded px-2 py-1"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-gray-300 text-xs mb-1">
+                        Product Improvements
+                      </label>
+                      <input
+                        type="number"
+                        value={newMonth.productImprovements}
+                        onChange={(e) =>
+                          handleNewMonthChange(
+                            "productImprovements",
+                            Number(e.target.value)
+                          )
+                        }
+                        className="w-full bg-[#23232b] text-gray-100 rounded px-2 py-1"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-gray-300 text-xs mb-1">
+                        Market Expansion
+                      </label>
+                      <input
+                        type="number"
+                        value={newMonth.marketExpansion}
+                        onChange={(e) =>
+                          handleNewMonthChange(
+                            "marketExpansion",
+                            Number(e.target.value)
+                          )
+                        }
+                        className="w-full bg-[#23232b] text-gray-100 rounded px-2 py-1"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-gray-300 text-xs mb-1">
+                        Funding Round
+                      </label>
+                      <select
+                        value={newMonth.fundingRound || ""}
+                        onChange={(e) =>
+                          handleNewMonthChange(
+                            "fundingRound",
+                            e.target.value || null
+                          )
+                        }
+                        className="w-full bg-[#23232b] text-gray-100 rounded px-2 py-1"
                       >
-                        {preset.label}
-                      </button>
-                    ))}
+                        <option value="">None</option>
+                        <option value="seed">Seed</option>
+                        <option value="seriesA">Series A</option>
+                        <option value="seriesB">Series B</option>
+                      </select>
+                    </div>
                   </div>
-                </div>
-              </motion.div>
+                  <button
+                    type="submit"
+                    className="mt-4 w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 rounded-lg"
+                    disabled={addMonthLoading}
+                  >
+                    {addMonthLoading ? "Adding..." : "Add Month"}
+                  </button>
+                </form>
+              </div>
+            )}
 
-              {/* Initial Cash Input */}
-              <motion.div
-                whileHover={{ scale: 1.02 }}
-                className={`bg-gray-800/50 backdrop-blur-md rounded-xl p-6 border ${
-                  simulationParams.initialCash === 0
-                    ? "border-gray-700/30"
-                    : "border-gray-700/50"
-                } relative group`}
-              >
-                <div className="absolute inset-0 bg-gradient-to-br from-green-600/10 to-emerald-600/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="p-3 bg-green-500/10 rounded-xl group-hover:bg-green-500/20 transition-colors">
-                    <DollarSign className="w-6 h-6 text-green-400" />
+            {/* Display loaded monthly data */}
+            <div className="mb-10">
+              <h2 className="text-xl font-semibold mb-4 text-gray-100">
+                Your Historical Monthly Data
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {monthsData.map((row, idx) => (
+                  <div key={idx} className="bg-[#18181b] rounded-xl p-4 shadow">
+                    <div className="mb-2">
+                      <h3 className="text-gray-300 text-sm font-semibold">
+                        {row.monthName}
+                      </h3>
+                    </div>
+                    <div>
+                      <RotatingText
+                        text="Initial Users"
+                        className="block text-gray-300 text-sm font-medium mb-1"
+                      />
+                      <RotatingText
+                        text="Required"
+                        className="text-xs text-gray-500"
+                        delay={0.1}
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <RotatingText
-                      text="Initial Cash"
-                      className="block text-gray-300 text-sm font-medium mb-1"
-                    />
-                    <RotatingText
-                      text="Required"
-                      className="text-xs text-gray-500"
-                      delay={0.1}
-                    />
-                  </div>
-                </div>
-                <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">
-                    $
-                  </span>
-                  <input
-                    type="number"
-                    value={
-                      simulationParams.initialCash === 0
-                        ? ""
-                        : simulationParams.initialCash
-                    }
-                    onChange={(e) =>
-                      handleInputChange(
-                        "initialCash",
-                        e.target.value,
-                        INPUT_CONSTRAINTS.cash
-                      )
-                    }
-                    min={0}
-                    max={INPUT_CONSTRAINTS.cash.max}
-                    step={INPUT_CONSTRAINTS.cash.step}
-                    className={`w-full bg-gray-900/50 border ${
-                      simulationParams.initialCash === 0
-                        ? "border-gray-700/30 focus:border-green-500/30"
-                        : "border-gray-700/50 focus:border-green-500/50"
-                    } rounded-lg px-4 py-2.5 text-gray-100 focus:ring-2 focus:ring-green-500/50 transition-all pl-8`}
-                    placeholder="Enter amount..."
-                  />
-                </div>
-                <div className="mt-3">
-                  <input
-                    type="range"
-                    min={0}
-                    max={INPUT_CONSTRAINTS.cash.max}
-                    step={INPUT_CONSTRAINTS.cash.step}
-                    value={simulationParams.initialCash}
-                    onChange={(e) =>
-                      handleInputChange(
-                        "initialCash",
-                        Number(e.target.value),
-                        INPUT_CONSTRAINTS.cash
-                      )
-                    }
-                    className="w-full h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-green-500"
-                  />
-                  <div className="flex justify-between mt-2">
-                    {INPUT_CONSTRAINTS.cash.presets.map((preset) => (
-                      <button
-                        key={preset.label}
-                        onClick={() =>
-                          handleInputChange(
-                            "initialCash",
-                            preset.value,
-                            INPUT_CONSTRAINTS.cash
-                          )
-                        }
-                        className="px-2 py-1 text-xs rounded-md bg-gray-700/50 text-gray-300 hover:bg-green-500/20 hover:text-green-400 transition-colors"
-                      >
-                        {preset.label}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="flex justify-between mt-1">
-                    <span className="text-xs text-gray-500">
-                      ${formatNumber(INPUT_CONSTRAINTS.cash.min)}
-                    </span>
-                    <span className="text-xs text-gray-500">
-                      ${formatNumber(INPUT_CONSTRAINTS.cash.max)}
-                    </span>
-                  </div>
-                </div>
-              </motion.div>
-
-              {/* Market Size Input */}
-              <motion.div
-                whileHover={{ scale: 1.02 }}
-                className={`bg-gray-800/50 backdrop-blur-md rounded-xl p-6 border ${
-                  simulationParams.marketSize === 0
-                    ? "border-gray-700/30"
-                    : "border-gray-700/50"
-                } relative group`}
-              >
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-cyan-600/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="p-3 bg-blue-500/10 rounded-xl group-hover:bg-blue-500/20 transition-colors">
-                    <Target className="w-6 h-6 text-blue-400" />
-                  </div>
-                  <div>
-                    <RotatingText
-                      text="Market Size"
-                      className="block text-gray-300 text-sm font-medium mb-1"
-                    />
-                    <RotatingText
-                      text="Required"
-                      className="text-xs text-gray-500"
-                      delay={0.1}
-                    />
-                  </div>
-                </div>
-                <div className="relative">
-                  <input
-                    type="number"
-                    value={
-                      simulationParams.marketSize === 0
-                        ? ""
-                        : simulationParams.marketSize
-                    }
-                    onChange={(e) =>
-                      handleInputChange(
-                        "marketSize",
-                        e.target.value,
-                        INPUT_CONSTRAINTS.marketSize
-                      )
-                    }
-                    min={0}
-                    max={INPUT_CONSTRAINTS.marketSize.max}
-                    step={INPUT_CONSTRAINTS.marketSize.step}
-                    className={`w-full bg-gray-900/50 border ${
-                      simulationParams.marketSize === 0
-                        ? "border-gray-700/30 focus:border-blue-500/30"
-                        : "border-gray-700/50 focus:border-blue-500/50"
-                    } rounded-lg px-4 py-2.5 text-gray-100 focus:ring-2 focus:ring-blue-500/50 transition-all`}
-                    placeholder="Enter market size..."
-                  />
-                </div>
-                <div className="mt-3">
-                  <input
-                    type="range"
-                    min={0}
-                    max={INPUT_CONSTRAINTS.marketSize.max}
-                    step={INPUT_CONSTRAINTS.marketSize.step}
-                    value={simulationParams.marketSize}
-                    onChange={(e) =>
-                      handleInputChange(
-                        "marketSize",
-                        Number(e.target.value),
-                        INPUT_CONSTRAINTS.marketSize
-                      )
-                    }
-                    className="w-full h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                  />
-                  <div className="flex justify-between mt-2">
-                    {INPUT_CONSTRAINTS.marketSize.presets.map((preset) => (
-                      <button
-                        key={preset.label}
-                        onClick={() =>
-                          handleInputChange(
-                            "marketSize",
-                            preset.value,
-                            INPUT_CONSTRAINTS.marketSize
-                          )
-                        }
-                        className="px-2 py-1 text-xs rounded-md bg-gray-700/50 text-gray-300 hover:bg-blue-500/20 hover:text-blue-400 transition-colors"
-                      >
-                        {preset.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </motion.div>
-
-              {/* Team Size Input */}
-              <motion.div
-                whileHover={{ scale: 1.02 }}
-                className={`bg-gray-800/50 backdrop-blur-md rounded-xl p-6 border ${
-                  simulationParams.initialTeamSize === 0
-                    ? "border-gray-700/30"
-                    : "border-gray-700/50"
-                } relative group`}
-              >
-                <div className="absolute inset-0 bg-gradient-to-br from-orange-600/10 to-red-600/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="p-3 bg-orange-500/10 rounded-xl group-hover:bg-orange-500/20 transition-colors">
-                    <UserPlus className="w-6 h-6 text-orange-400" />
-                  </div>
-                  <div>
-                    <RotatingText
-                      text="Initial Team Size"
-                      className="block text-gray-300 text-sm font-medium mb-1"
-                    />
-                    <RotatingText
-                      text="Required"
-                      className="text-xs text-gray-500"
-                      delay={0.1}
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-5 gap-2 mb-3">
-                  {TEAM_SIZE_OPTIONS.map((value, index) => {
-                    const isSelected =
-                      simulationParams.initialTeamSize === value;
-                    return (
-                      <motion.button
-                        key={value}
-                        onClick={() =>
-                          handleInputChange(
-                            "initialTeamSize",
-                            value,
-                            INPUT_CONSTRAINTS.teamSize
-                          )
-                        }
-                        whileHover={!isSelected ? { scale: 1.05 } : {}}
-                        whileTap={!isSelected ? { scale: 0.95 } : {}}
-                        className={`relative p-4 rounded-xl ${
-                          isSelected
-                            ? "bg-orange-500/20 text-orange-400 ring-2 ring-orange-500/50"
-                            : "bg-gray-800/50 text-gray-400 hover:bg-gray-700/50"
-                        } transition-all duration-200 flex items-center justify-center`}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.1 }}
-                      >
-                        <span className="text-2xl font-semibold">{value}</span>
-                      </motion.button>
-                    );
-                  })}
-                </div>
-                <div className="relative">
-                  <input
-                    type="number"
-                    value={
-                      simulationParams.initialTeamSize === 0
-                        ? ""
-                        : simulationParams.initialTeamSize
-                    }
-                    onChange={(e) =>
-                      handleInputChange(
-                        "initialTeamSize",
-                        e.target.value,
-                        INPUT_CONSTRAINTS.teamSize
-                      )
-                    }
-                    min={0}
-                    max={INPUT_CONSTRAINTS.teamSize.max}
-                    step={INPUT_CONSTRAINTS.teamSize.step}
-                    className={`w-full bg-gray-900/50 border ${
-                      simulationParams.initialTeamSize === 0
-                        ? "border-gray-700/30 focus:border-orange-500/30"
-                        : "border-gray-700/50 focus:border-orange-500/50"
-                    } rounded-lg px-4 py-2.5 text-gray-100 focus:ring-2 focus:ring-orange-500/50 transition-all`}
-                    placeholder="Enter team size..."
-                  />
-                </div>
-              </motion.div>
+                ))}
+              </div>
             </div>
 
             <div className="mt-8 flex flex-wrap items-center gap-8">
@@ -991,6 +941,17 @@ const AnalyticsPage: React.FC = () => {
                 <TrendingUp className="w-5 h-5" />
                 <RotatingText text="Run Simulation" />
               </motion.button>
+
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handleAddMonth}
+                className="px-8 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:shadow-green-500/40 rounded-xl text-white font-medium shadow-lg shadow-green-500/25 transition-all flex items-center gap-3"
+              >
+                <Clock className="w-5 h-5" />
+                <span>Add Month</span>
+              </motion.button>
+
               {error && (
                 <RotatingText text={error} className="text-red-400 text-sm" />
               )}
@@ -1005,81 +966,69 @@ const AnalyticsPage: React.FC = () => {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="mb-12"
         >
-          <div className="flex items-center gap-4 mb-6">
-            <div className="p-3 bg-blue-500/10 rounded-xl">
-              <Activity className="w-6 h-6 text-blue-400" />
-            </div>
-            <div>
-              <RotatingText
-                text="Historical Performance"
-                className="text-xl font-semibold text-white"
-              />
-              <RotatingText
-                text="Your startup's monthly metrics"
-                className="text-gray-400 text-sm"
-                delay={0.1}
-              />
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-blue-500/10 rounded-xl">
+                <Activity className="w-6 h-6 text-blue-400" />
+              </div>
+              <div>
+                <RotatingText
+                  text="Historical Performance"
+                  className="text-xl font-semibold text-white"
+                />
+                <RotatingText
+                  text="Your startup's monthly metrics"
+                  className="text-gray-400 text-sm"
+                  delay={0.1}
+                />
+              </div>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {monthsData.map((row, idx) => (
-              <motion.div
+              <div
                 key={idx}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: idx * 0.1 }}
-                whileHover={{ scale: 1.02 }}
-                className="bg-gray-900/50 backdrop-blur-xl rounded-xl p-6 border border-gray-800/50 shadow-xl"
+                className="bg-gray-800/50 backdrop-blur-md rounded-xl p-6 border border-gray-700/50"
               >
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-white">
+                <div className="mb-4">
+                  <h3 className="text-gray-300 font-semibold">
                     {row.monthName}
                   </h3>
-                  <div className="p-2 bg-purple-500/10 rounded-lg">
-                    <Clock className="w-4 h-4 text-purple-400" />
-                  </div>
                 </div>
-
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div className="flex justify-between items-center">
                     <span className="text-gray-400">Marketing Spend</span>
-                    <span className="text-gray-200 font-medium">
+                    <span className="text-gray-200">
                       ${row.marketingSpend?.toLocaleString()}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-400">Burn Rate</span>
-                    <span className="text-gray-200 font-medium">
+                    <span className="text-gray-200">
                       ${row.burnRate?.toLocaleString()}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-400">CAC</span>
-                    <span className="text-gray-200 font-medium">
-                      ${row.cac}
-                    </span>
+                    <span className="text-gray-200">${row.cac}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-400">Churn Rate</span>
-                    <span className="text-gray-200 font-medium">
+                    <span className="text-gray-200">
                       {(row.churnRate * 100).toFixed(1)}%
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-400">ARPU</span>
-                    <span className="text-gray-200 font-medium">
-                      ${row.arpu}
-                    </span>
+                    <span className="text-gray-200">${row.arpu}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-400">Team Size</span>
-                    <span className="text-gray-200 font-medium">
-                      {row.teamSize || 3}
-                    </span>
+                    <span className="text-gray-200">{row.teamSize || 3}</span>
                   </div>
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
         </motion.div>

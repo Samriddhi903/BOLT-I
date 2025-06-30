@@ -20,6 +20,9 @@ import ProfileEditPage from "./components/ProfileEditPage";
 import PageTransition from "./components/PageTransition";
 import LoginSignupPage from "./components/LoginSignupPage";
 import VoiceStartupAdvisor from "./components/VoiceStartupAdvisor";
+import PaymentPage from "./components/PaymentPage";
+import PaymentsPage from "./components/PaymentsPage";
+import UpgradeModal from './components/UpgradeModal';
 
 const AppContent = () => {
   const location = useLocation();
@@ -30,9 +33,33 @@ const AppContent = () => {
     location.pathname !== "/startup-details" &&
     location.pathname !== "/investor-details";
 
+  // Show upgrade modal only when explicitly requested via sessionStorage
+  const [showUpgradeModal, setShowUpgradeModal] = React.useState(false);
+  React.useEffect(() => {
+    if (sessionStorage.getItem('showUpgradeModal') === '1') {
+      // Check if user already has Premium plan
+      const currentPlan = localStorage.getItem('currentPlan');
+      if (currentPlan === 'Premium') {
+        // Don't show upgrade modal for Premium users
+        sessionStorage.removeItem('showUpgradeModal');
+        return;
+      }
+      
+      setTimeout(() => {
+        setShowUpgradeModal(true);
+        sessionStorage.removeItem('showUpgradeModal');
+      }, 1500);
+    }
+  }, [location.pathname]); // Re-run when location changes
+  const handleCloseUpgradeModal = () => {
+    setShowUpgradeModal(false);
+    sessionStorage.setItem('upgradeModalDismissed', '1');
+  };
+
   return (
     <div className="relative min-h-screen bg-[#121212]">
       {showNavigation && <Navigation />}
+      <UpgradeModal open={showUpgradeModal} onClose={handleCloseUpgradeModal} />
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
           <Route
@@ -153,6 +180,22 @@ const AppContent = () => {
             element={
               <PageTransition>
                 <TinderPage />
+              </PageTransition>
+            }
+          />
+          <Route
+            path="/payment"
+            element={
+              <PageTransition>
+                <PaymentPage />
+              </PageTransition>
+            }
+          />
+          <Route
+            path="/payments"
+            element={
+              <PageTransition>
+                <PaymentsPage />
               </PageTransition>
             }
           />

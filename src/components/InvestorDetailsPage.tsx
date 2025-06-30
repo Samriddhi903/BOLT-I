@@ -169,6 +169,7 @@ const InvestorDetailsPage: React.FC = () => {
       }
 
       // Navigate to analytics page
+      sessionStorage.setItem('showUpgradeModal', '1');
       navigate('/analytics');
 
     } catch (error) {

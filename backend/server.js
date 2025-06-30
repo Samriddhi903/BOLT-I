@@ -7,6 +7,8 @@ const { MongoClient, ObjectId } = require('mongodb');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const http = require('http');
+const { Server } = require('socket.io');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -532,13 +534,16 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
     res.json({
       success: true,
       user: {
-        id: user._id,
         email: user.email,
-        role: user.role,
+        id: user._id,
+        role: user.role || null,
         createdAt: user.createdAt,
-        lastLogin: user.lastLogin,
-        businessId: startupProfile ? req.user.userId : null // Use userId as businessId if they have a startup profile
-      }
+        lastLogin: user.lastLogin
+      },
+      businessId: startupProfile ? req.user.userId : null, // Use userId as businessId if they have a startup profile
+      hasStartupProfile: !!startupProfile,
+      role: user?.role || null,
+      currentPlan: user?.currentPlan || 'Free'
     });
 
   } catch (error) {
@@ -1111,27 +1116,71 @@ app.post('/api/match/like', authenticateToken, async (req, res) => {
     }
     const database = await connectToDatabase();
     const userId = req.user.userId;
+    
+    // Validate users exist and are of opposite roles
+    const currentUser = await database.collection('users').findOne({ _id: new ObjectId(userId) });
+    const targetUser = await database.collection('users').findOne({ _id: new ObjectId(targetUserId) });
+    
+    if (!currentUser || !targetUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    if (currentUser.role === targetUser.role) {
+      return res.status(400).json({ error: 'Cannot match with user of same role' });
+    }
+    
     if (userId === targetUserId) {
       return res.status(400).json({ error: 'Cannot like yourself' });
     }
+
     // Record the like
     await database.collection('matches').updateOne(
       { userId, targetUserId },
-      { $set: { userId, targetUserId, liked: true, createdAt: new Date().toISOString() } },
+      { 
+        $set: { 
+          userId, 
+          targetUserId, 
+          liked: true, 
+          userRole: currentUser.role,
+          targetRole: targetUser.role,
+          createdAt: new Date().toISOString() 
+        } 
+      },
       { upsert: true }
     );
-    // Check for mutual like
-    const mutual = await database.collection('matches').findOne({ userId: targetUserId, targetUserId: userId, liked: true });
+
+    // Check for mutual like with proper role validation
+    const mutual = await database.collection('matches').findOne({ 
+      userId: targetUserId, 
+      targetUserId: userId, 
+      liked: true 
+    });
+
     if (mutual) {
-      // Always store users in sorted order to avoid MongoDB ambiguity
+      // Verify the roles are still opposite
+      if (mutual.userRole !== currentUser.role) {
+        // Store the match
       const sortedUsers = [userId, targetUserId].sort();
       await database.collection('mutual_matches').updateOne(
         { users: sortedUsers },
-        { $set: { users: sortedUsers, matchedAt: new Date().toISOString() } },
+          { 
+            $set: { 
+              users: sortedUsers,
+              startupId: currentUser.role === 'startup' ? userId : targetUserId,
+              investorId: currentUser.role === 'investor' ? userId : targetUserId,
+              matchedAt: new Date().toISOString() 
+            } 
+          },
         { upsert: true }
       );
-      return res.json({ success: true, matched: true, message: 'It\'s a match!' });
+        return res.json({ 
+          success: true, 
+          matched: true, 
+          message: 'It\'s a match!' 
+        });
     }
+    }
+
     res.json({ success: true, matched: false });
   } catch (error) {
     console.error('Match like error:', error);
@@ -1153,6 +1202,186 @@ app.get('/api/match/list', authenticateToken, async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST"]
+  }
+});
+
+// Message Schema
+const messageSchema = {
+  senderId: String,
+  receiverId: String,
+  text: String,
+  timestamp: Date,
+  status: String,
+  attachments: Array
+};
+
+// Socket.IO connection handling
+const userSockets = new Map();
+
+io.on('connection', (socket) => {
+  console.log('User connected:', socket.id);
+
+  // Store user socket mapping when they join
+  socket.on('join', (userId) => {
+    userSockets.set(userId, socket.id);
+    console.log('User joined:', userId, 'Socket ID:', socket.id);
+  });
+
+  // Handle new message
+  socket.on('sendMessage', async (messageData) => {
+    try {
+      const database = await connectToDatabase();
+      const { senderId, receiverId, text, attachments } = messageData;
+
+      console.log('Received message:', { senderId, receiverId, text });
+
+      // Create new message
+      const newMessage = {
+        senderId,
+        receiverId,
+        text,
+        timestamp: new Date(),
+        status: 'sent',
+        attachments: attachments || []
+      };
+
+      // Save message to database
+      const result = await database.collection('messages').insertOne(newMessage);
+      
+      // Add the MongoDB _id to the message as a string
+      newMessage._id = result.insertedId.toString();
+
+      console.log('Message saved with ID:', newMessage._id);
+
+      // Send to receiver if online
+      const receiverSocketId = userSockets.get(receiverId);
+      if (receiverSocketId) {
+        console.log('Sending to receiver socket:', receiverSocketId);
+        io.to(receiverSocketId).emit('newMessage', newMessage);
+        
+        // Update message status to delivered
+        await database.collection('messages').updateOne(
+          { _id: result.insertedId },
+          { $set: { status: 'delivered' } }
+        );
+        
+        // Notify sender of delivery
+        socket.emit('messageStatus', { 
+          messageId: newMessage._id, 
+          status: 'delivered' 
+        });
+      }
+
+      // Send confirmation back to sender with the server-generated ID
+      socket.emit('messageSent', newMessage);
+      console.log('Sent confirmation to sender');
+    } catch (error) {
+      console.error('Error sending message:', error);
+      socket.emit('messageError', { error: 'Failed to send message' });
+    }
+  });
+
+  // Handle message read status
+  socket.on('messageRead', async ({ messageId, senderId }) => {
+    try {
+      const database = await connectToDatabase();
+      
+      // Convert string ID to ObjectId for MongoDB
+      const objectId = new ObjectId(messageId);
+      
+      await database.collection('messages').updateOne(
+        { _id: objectId },
+        { $set: { status: 'read' } }
+      );
+
+      // Notify sender that message was read
+      const senderSocketId = userSockets.get(senderId);
+      if (senderSocketId) {
+        io.to(senderSocketId).emit('messageStatus', { 
+          messageId, 
+          status: 'read' 
+        });
+      }
+    } catch (error) {
+      console.error('Error updating message status:', error);
+    }
+  });
+
+  // Handle typing status
+  socket.on('typing', ({ senderId, receiverId }) => {
+    const receiverSocketId = userSockets.get(receiverId);
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit('userTyping', { userId: senderId });
+    }
+  });
+
+  // Handle stop typing
+  socket.on('stopTyping', ({ senderId, receiverId }) => {
+    const receiverSocketId = userSockets.get(receiverId);
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit('userStoppedTyping', { userId: senderId });
+    }
+  });
+
+  // Handle disconnect
+  socket.on('disconnect', () => {
+    // Remove user socket mapping
+    for (const [userId, socketId] of userSockets.entries()) {
+      if (socketId === socket.id) {
+        userSockets.delete(userId);
+        console.log('User disconnected:', userId);
+        break;
+      }
+    }
+  });
+});
+
+// API endpoint to get chat history
+app.get('/api/messages/:userId', authenticateToken, async (req, res) => {
+  try {
+    const database = await connectToDatabase();
+    const { userId } = req.params;
+    const currentUserId = req.user.userId;
+
+    // Get messages where current user is either sender or receiver
+    const messages = await database.collection('messages')
+      .find({
+        $or: [
+          { senderId: currentUserId, receiverId: userId },
+          { senderId: userId, receiverId: currentUserId }
+        ]
+      })
+      .sort({ timestamp: 1 })
+      .toArray();
+
+    // Convert ObjectId to string for each message
+    const formattedMessages = messages.map(message => ({
+      ...message,
+      _id: message._id.toString()
+    }));
+
+    // Mark messages as read
+    await database.collection('messages').updateMany(
+      {
+        senderId: userId,
+        receiverId: currentUserId,
+        status: { $ne: 'read' }
+      },
+      { $set: { status: 'read' } }
+    );
+
+    res.json({ success: true, messages: formattedMessages });
+  } catch (error) {
+    console.error('Error fetching messages:', error);
+    res.status(500).json({ error: 'Failed to fetch messages' });
+  }
+});
+
+server.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });

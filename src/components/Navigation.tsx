@@ -52,6 +52,7 @@ const Navigation: React.FC = () => {
     { name: "Resources", path: "/resources" },
     { name: "Chat", path: "/chat" },
     { name: "Tinder-style interface", path: "/tinder" },
+    { name: "Payments", path: "/payments" },
   ];
 
   return (
@@ -122,6 +123,13 @@ const Navigation: React.FC = () => {
                       <User className="w-4 h-4" />
                       <span>Profile Settings</span>
                     </Link>
+                    <Link
+                      to="/payments"
+                      className="flex items-center space-x-2 px-4 py-2 text-gray-300 hover:text-purple-400 hover:bg-purple-900/20 transition-colors"
+                      onClick={() => setIsUserMenuOpen(false)}
+                    >
+                      <span>Payments</span>
+                    </Link>
                     <button
                       onClick={handleLogout}
                       className="flex items-center space-x-2 px-4 py-2 text-gray-300 hover:text-red-400 hover:bg-red-900/20 transition-colors w-full text-left"
@@ -188,6 +196,13 @@ const Navigation: React.FC = () => {
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Profile Settings
+                </Link>
+                <Link
+                  to="/payments"
+                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-purple-400 hover:bg-purple-900/10 transition-colors"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Payments
                 </Link>
                 <button
                   onClick={() => {

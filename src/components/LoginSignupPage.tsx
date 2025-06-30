@@ -169,6 +169,7 @@ const LoginSignupPage: React.FC = () => {
       if (mode === "signup") {
         navigate("/role-selection");
       } else {
+        sessionStorage.setItem('showUpgradeModal', '1');
         navigate("/analytics");
       }
 

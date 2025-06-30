@@ -35,6 +35,7 @@ import {
   Monitor,
   Moon,
   Sun,
+  CreditCard,
 } from "lucide-react";
 
 const ProfileContainer = styled(motion.div)`
